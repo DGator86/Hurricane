@@ -1,1 +1,114 @@
-h1 { font-family: Arial, Helvetica, sans-serif; }
+/* Custom styles for Stock Market Dashboard */
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Chart container */
+#stockChart {
+  max-height: 400px;
+}
+
+/* Table styles */
+table {
+  border-collapse: collapse;
+}
+
+/* Hover effects */
+.hover-scale {
+  transition: transform 0.2s;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Glass morphism effect for cards */
+.glass {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(to right, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Error message animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+#errorDisplay:not(.hidden) {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Search result hover */
+#searchResults > div:hover {
+  background-color: rgba(243, 244, 246, 0.8);
+  transition: background-color 0.2s;
+}
+
+/* Button press effect */
+button:active {
+  transform: scale(0.98);
+}

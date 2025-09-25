@@ -3,10 +3,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "build": "vite build",
     "preview": "wrangler pages dev",
-    "deploy": "npm run build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name webapp",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "start": "pm2 start ecosystem.config.cjs",
+    "stop": "pm2 stop webapp",
+    "restart": "pm2 restart webapp",
+    "logs": "pm2 logs webapp --nostream",
+    "test": "curl http://localhost:3000"
   },
   "dependencies": {
     "hono": "^4.9.8"
