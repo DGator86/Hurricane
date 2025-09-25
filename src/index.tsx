@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { renderer } from './renderer'
 import { PredictionEngine, OptionsScanner, TechnicalAnalysis, HurricaneModel, type Candle, type Prediction, type OptionsRecommendation } from './models/prediction'
+import { MarketDataService } from './market-data'
 
 type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
@@ -298,15 +299,13 @@ app.get('/', (c) => {
 
 // Get current market data with predictions
 app.get('/api/predict/current', async (c) => {
+  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  
   try {
-    // Generate synthetic market data for demonstration
-    const currentPrice = 450 + Math.random() * 10
-    const vix = 15 + Math.random() * 10
+    // Fetch REAL market data
+    const { candles, vix, currentPrice } = await marketData.getMarketDataForPrediction('1h')
     
-    // Generate candles for analysis
-    const candles = generateSyntheticCandles(currentPrice, 200, 0.005)
-    
-    // Generate prediction
+    // Generate prediction using REAL data
     const prediction = PredictionEngine.generatePrediction(candles, '1h', vix)
     
     // Cache and return
@@ -314,31 +313,50 @@ app.get('/api/predict/current', async (c) => {
       timestamp: new Date().toISOString(),
       price: currentPrice,
       vix: vix,
-      prediction: prediction
+      prediction: prediction,
+      dataSource: 'Alpha Vantage Live Data'
     }
     
     setCachedData('current_prediction', data)
     return c.json(data)
   } catch (error) {
-    return c.json({ error: 'Failed to generate prediction' }, 500)
+    console.error('Error fetching real market data:', error)
+    return c.json({ error: 'Failed to fetch real market data' }, 500)
   }
 })
 
 // Get predictions for all timeframes
 app.get('/api/predict/all', async (c) => {
+  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  
   try {
     const timeframes = ['15m', '1h', '4h', '1d', '1w']
-    const currentPrice = 450 + Math.random() * 10
-    const vix = 15 + Math.random() * 10
+    const predictions: Prediction[] = []
     
-    const predictions = timeframes.map(tf => {
-      const candles = generateSyntheticCandles(currentPrice, 200, 0.005)
-      return PredictionEngine.generatePrediction(candles, tf, vix)
+    // Fetch real market data once
+    const [intradayCandles, dailyCandles, vix, quote] = await Promise.all([
+      marketData.getIntradayData('5min'),
+      marketData.getDailyData('full'),
+      marketData.getCurrentVIXLevel(),
+      marketData.getCurrentSPYQuote()
+    ])
+    
+    for (const tf of timeframes) {
+      // Use appropriate candles based on timeframe
+      const candles = (tf === '15m' || tf === '1h') ? intradayCandles : dailyCandles
+      const prediction = PredictionEngine.generatePrediction(candles, tf, vix)
+      predictions.push(prediction)
+    }
+    
+    return c.json({ 
+      predictions,
+      currentPrice: quote.price,
+      vix: vix,
+      dataSource: 'Alpha Vantage Live Data'
     })
-    
-    return c.json({ predictions })
   } catch (error) {
-    return c.json({ error: 'Failed to generate predictions' }, 500)
+    console.error('Error fetching real market data:', error)
+    return c.json({ error: 'Failed to fetch real market data' }, 500)
   }
 })
 
@@ -385,12 +403,22 @@ app.get('/api/options/recommendations/all', async (c) => {
   }
 })
 
-// Get technical indicators
+// Get technical indicators from REAL market data
 app.get('/api/realmarket/indicators', async (c) => {
+  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  
   try {
-    const candles = generateSyntheticCandles(450, 200, 0.005)
+    // Fetch REAL daily data for technical analysis
+    const candles = await marketData.getDailyData('full')
     const prices = candles.map(c => c.close)
     
+    // Also try to fetch RSI from Alpha Vantage directly
+    const [rsiData, quote] = await Promise.all([
+      marketData.getTechnicalIndicator('RSI', 'daily', 14),
+      marketData.getCurrentSPYQuote()
+    ])
+    
+    // Calculate indicators from real data
     const indicators = {
       rsi: TechnicalAnalysis.calculateRSI(prices),
       macd: TechnicalAnalysis.calculateMACD(prices),
@@ -399,12 +427,40 @@ app.get('/api/realmarket/indicators', async (c) => {
       ma5: prices.slice(-5).reduce((a, b) => a + b, 0) / 5,
       ma20: prices.slice(-20).reduce((a, b) => a + b, 0) / 20,
       ma50: prices.slice(-50).reduce((a, b) => a + b, 0) / Math.min(50, prices.length),
-      ma200: prices.slice(-200).reduce((a, b) => a + b, 0) / Math.min(200, prices.length)
+      ma200: prices.slice(-200).reduce((a, b) => a + b, 0) / Math.min(200, prices.length),
+      currentPrice: quote.price,
+      dataSource: 'Alpha Vantage Live Data',
+      alphaVantageRSI: rsiData // Include Alpha Vantage's RSI calculation if available
     }
     
     return c.json(indicators)
   } catch (error) {
-    return c.json({ error: 'Failed to calculate indicators' }, 500)
+    console.error('Error fetching real indicators:', error)
+    return c.json({ error: 'Failed to fetch real market indicators' }, 500)
+  }
+})
+
+// Get REAL SPY and VIX data
+app.get('/api/realdata/spy', async (c) => {
+  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  
+  try {
+    const [spyQuote, vixLevel, intradayData] = await Promise.all([
+      marketData.getCurrentSPYQuote(),
+      marketData.getCurrentVIXLevel(),
+      marketData.getIntradayData('5min')
+    ])
+    
+    return c.json({
+      spy: spyQuote,
+      vix: vixLevel,
+      recentCandles: intradayData.slice(-20), // Last 20 candles
+      dataSource: 'Alpha Vantage Live Data',
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error fetching SPY data:', error)
+    return c.json({ error: 'Failed to fetch SPY data' }, 500)
   }
 })
 
