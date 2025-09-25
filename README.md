@@ -1,113 +1,152 @@
-# Stock Market Dashboard
+# 🌀 SPY Hurricane Tracker - Market Storm Analysis System
 
 ## Project Overview
-- **Name**: Stock Market Dashboard
-- **Goal**: Provide real-time stock market data visualization using Alpha Vantage API
+- **Name**: SPY Hurricane Tracker
+- **Goal**: Track S&P 500 (SPY) volatility using weather/hurricane metaphors for market conditions
+- **Concept**: Treats market volatility like meteorological storms, providing intuitive visualization of market turbulence
 - **Features**: 
-  - Real-time stock quotes
-  - Historical price charts
-  - Time series data (daily, weekly, monthly)
-  - Company search functionality
-  - Interactive data visualization with Chart.js
+  - Real-time SPY and VIX tracking with hurricane-style categorization
+  - Storm intensity visualization with animated hurricane eye
+  - Market pressure systems and volatility radar
+  - Historical storm tracking and pattern analysis
+  - Weather-inspired metrics (wind speed, pressure, temperature)
 
 ## URLs
-- **Development**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev
+- **Live Application**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev
 - **Production**: Will be available after Cloudflare Pages deployment
 - **GitHub**: Not yet configured
 
+## 🌪️ Storm Categories
+
+| Category | VIX Range | Description | Wind Speed | Market Condition |
+|----------|-----------|-------------|------------|------------------|
+| **Calm Seas** | 0-12 | Smooth sailing | 0-10 mph | Low volatility, stable markets |
+| **Light Breeze** | 12-15 | Minor turbulence | 10-25 mph | Normal market fluctuations |
+| **Tropical Depression** | 15-20 | Moderate volatility | 25-40 mph | Increased uncertainty |
+| **Tropical Storm** | 20-25 | High volatility | 40-75 mph | Caution advised |
+| **Category 1 Hurricane** | 25-30 | Dangerous conditions | 75-95 mph | Significant market stress |
+| **Category 2 Hurricane** | 30-40 | Extreme volatility | 95-110 mph | Severe market turmoil |
+| **Category 5 Hurricane** | 40+ | CATASTROPHIC | 157+ mph | Market crash conditions |
+
 ## Data Architecture
-- **Data Models**: Stock quotes, time series data, company information
-- **Storage Services**: No persistent storage (real-time API calls)
-- **Data Source**: Alpha Vantage API
-- **Data Flow**: Frontend → Hono API routes → Alpha Vantage API → Response processing → Chart/Table display
+- **Primary Data**: SPY (S&P 500 ETF) real-time and historical prices
+- **Volatility Index**: VIX (CBOE Volatility Index) - "Fear Gauge"
+- **Data Source**: Alpha Vantage Financial API
+- **Update Frequency**: Auto-refresh every 60 seconds
+- **Storage**: No persistent storage (real-time API analysis)
 
-## Features
+## ✅ Currently Implemented Features
 
-### ✅ Currently Completed
-1. **Stock Quote Lookup**
-   - Real-time price data
-   - Daily change and percentage
-   - Volume, high/low prices
-   - Previous close information
+### 1. **Real-Time Market Hurricane Tracking**
+   - Live SPY price and change monitoring
+   - VIX level tracking with storm categorization
+   - Volume surge detection
+   - Automatic storm alerts for dangerous conditions
 
-2. **Time Series Data**
-   - Daily, weekly, and monthly historical data
-   - Interactive line charts using Chart.js
-   - Tabular data display with 10 most recent entries
+### 2. **Hurricane Eye Visualization**
+   - Animated hurricane eye with intensity percentage
+   - Dynamic color coding based on storm level
+   - Pulsing effects that intensify with volatility
 
-3. **Company Search**
-   - Search companies by name or keywords
-   - Quick selection from search results
-   - Popular stock quick access buttons (AAPL, GOOGL, MSFT, AMZN, TSLA, META)
+### 3. **Market Radar System**
+   - 6-axis radar chart showing:
+     - Volatility levels
+     - Volume metrics
+     - Momentum indicators
+     - Fear index
+     - Put/Call ratios (simulated)
+     - Market breadth (simulated)
 
-4. **Secure API Integration**
-   - Alpha Vantage API key stored securely in environment variables
-   - Server-side API calls (no exposure of API key to frontend)
-   - Error handling for API limits and invalid symbols
+### 4. **Dual-Axis Volatility Chart**
+   - SPY price tracking (blue line)
+   - VIX fear index (red line)
+   - 20-day historical comparison
 
-5. **Responsive Design**
-   - Mobile-friendly interface
-   - TailwindCSS for styling
-   - Loading indicators and error messages
+### 5. **Market Pressure Systems**
+   - Buy pressure percentage
+   - Sell pressure percentage
+   - Market equilibrium indicator
+
+### 6. **Weather-Inspired Metrics**
+   - **Market Temperature**: Based on price momentum (°F)
+   - **Wind Speed**: Derived from VIX levels (mph)
+   - **Atmospheric Pressure**: Inverse of volatility (mb)
+   - **Visibility**: Based on volume clarity (miles)
+
+### 7. **Storm Timeline**
+   - Historical significant moves (>2% changes)
+   - Date, magnitude, and direction tracking
+   - Visual indicators for storm severity
+
+### 8. **Interactive Controls**
+   - Scan Market Conditions button
+   - Historical Storms viewer (placeholder)
+   - Storm Forecast predictor (placeholder)
 
 ## API Endpoints
 
-### Current Functional URIs
+### Functional URIs
 
 1. **GET /** 
-   - Main dashboard interface
+   - Main hurricane tracker dashboard
 
-2. **GET /api/quote/:symbol**
-   - Get current stock quote
-   - Parameters: `symbol` (e.g., AAPL, GOOGL)
-   - Returns: Current price, change, volume, etc.
+2. **GET /api/spy/current**
+   - Returns current SPY and VIX quotes
+   - Response: `{ spy: {...}, vix: {...} }`
 
-3. **GET /api/timeseries/:function/:symbol**
-   - Get historical time series data
-   - Parameters: 
-     - `function`: TIME_SERIES_DAILY, TIME_SERIES_WEEKLY, TIME_SERIES_MONTHLY
-     - `symbol`: Stock symbol
-   - Returns: Historical price data
+3. **GET /api/spy/intraday**
+   - 5-minute interval data for SPY
+   - Used for detailed storm tracking
 
-4. **GET /api/search/:keywords**
-   - Search for companies
-   - Parameters: `keywords` (company name or partial match)
-   - Returns: List of matching companies with symbols
+4. **GET /api/spy/daily**
+   - Daily historical data for trend analysis
+   - Powers the volatility chart
 
-5. **GET /api/company/:symbol**
-   - Get company overview (prepared but not used in UI yet)
-   - Parameters: `symbol`
-   - Returns: Company details
+5. **GET /api/spy/volatility**
+   - Bollinger Bands volatility analysis
+   - Technical volatility indicators
+
+6. **GET /api/market/indicators**
+   - RSI and MACD indicators
+   - Response: `{ rsi: {...}, macd: {...} }`
 
 ## User Guide
 
-### Getting Started
-1. Visit the dashboard URL
-2. Enter a stock symbol (e.g., AAPL for Apple) or use quick access buttons
-3. Select data type: Current Price, Daily, Weekly, or Monthly
-4. Click "Get Data" to fetch information
+### Understanding the Hurricane Tracker
 
-### Using Company Search
-1. Enter company name or keywords in the search field
-2. Click "Search" to find matching companies
-3. Click on a result to automatically load its stock data
+1. **Storm Categories**: The system automatically categorizes market conditions based on VIX levels
+2. **Hurricane Eye**: The center visualization shows storm intensity as a percentage
+3. **Color Coding**: 
+   - Green = Safe conditions
+   - Yellow = Caution
+   - Orange = Elevated risk
+   - Red = Dangerous
+   - Purple = Catastrophic
 
-### Understanding the Charts
-- **Line Chart**: Shows price trends over time
-- **Data Table**: Displays detailed historical data including Open, High, Low, Close, and Volume
-- **Current Quote**: Shows real-time price with change indicators (green for positive, red for negative)
+### Reading the Radar
+- Each axis represents a different market metric
+- The red area shows current conditions
+- The green circle represents the "safe zone"
+- Expansion beyond the safe zone indicates increasing storm conditions
 
-### Keyboard Shortcuts
-- Press Enter in the symbol field to fetch data
-- Press Enter in the search field to search companies
+### Weather Metrics Interpretation
+- **Temperature > 80°F**: Market is heating up (high momentum)
+- **Wind Speed > 40 mph**: Entering storm conditions
+- **Pressure < 1000 mb**: Low pressure system (high volatility)
+- **Visibility < 5 mi**: Unclear market conditions
+
+### Alert System
+- Automatic alerts trigger for Category 3+ storms (VIX > 20)
+- Alert banner appears at top with storm details
+- Hurricane eye animation speeds up with intensity
 
 ## Technical Stack
 - **Backend**: Hono Framework on Cloudflare Workers
-- **Frontend**: HTML5, TailwindCSS, Chart.js
+- **Frontend**: Vanilla JavaScript with Chart.js
+- **Styling**: TailwindCSS with custom animations
 - **API**: Alpha Vantage Financial Data API
 - **Runtime**: Cloudflare Pages/Workers
-- **Package Manager**: npm
-- **Process Manager**: PM2 (for development)
+- **Real-time Updates**: 60-second auto-refresh cycle
 
 ## Development
 
@@ -124,18 +163,14 @@ npm run build
 
 # Start development server
 npm run start  # Uses PM2
-# or
-npm run dev:sandbox  # Direct wrangler command
 ```
 
 ### Available Scripts
 - `npm run build` - Build for production
 - `npm run start` - Start with PM2
-- `npm run stop` - Stop PM2 process
-- `npm run restart` - Restart PM2 process
+- `npm run restart` - Restart application
 - `npm run logs` - View application logs
 - `npm run deploy` - Deploy to Cloudflare Pages
-- `npm run test` - Test if server is running
 
 ## Deployment
 - **Platform**: Cloudflare Pages
@@ -143,41 +178,51 @@ npm run dev:sandbox  # Direct wrangler command
 - **Tech Stack**: Hono + TypeScript + TailwindCSS + Chart.js
 - **Last Updated**: 2025-09-25
 
-### To Deploy to Production
+### Production Deployment
 1. Set up Cloudflare API key in Deploy tab
 2. Run `npm run deploy:prod`
-3. Add API key as secret: `npx wrangler pages secret put ALPHA_VANTAGE_API_KEY`
+3. Add Alpha Vantage API key: `npx wrangler pages secret put ALPHA_VANTAGE_API_KEY`
 
-## Features Not Yet Implemented
-- [ ] Company overview details page
-- [ ] Technical indicators (RSI, MACD, etc.)
-- [ ] Portfolio tracking
-- [ ] Watchlist functionality
-- [ ] Export data to CSV
-- [ ] Dark mode toggle
-- [ ] Real-time WebSocket updates
-- [ ] News integration
+## 🚀 Features Not Yet Implemented
+- [ ] Real RSI and MACD integration for storm prediction
+- [ ] Actual Put/Call ratio data
+- [ ] Market breadth indicators
+- [ ] Historical storm database with major market events
+- [ ] Storm prediction ML model
+- [ ] Options flow analysis
+- [ ] Sector rotation hurricane paths
+- [ ] Multi-asset storm tracking (QQQ, IWM, DIA)
+- [ ] Storm alerts via webhook/email
+- [ ] Dark pools activity as "underground pressure"
 
 ## Recommended Next Steps
-1. **Deploy to Cloudflare Pages** for production access
-2. **Add technical indicators** using Alpha Vantage technical API endpoints
-3. **Implement portfolio tracking** with Cloudflare D1 database for persistence
-4. **Add news integration** for comprehensive market insights
-5. **Create watchlist feature** with KV storage for user preferences
-6. **Implement data export** functionality
-7. **Add more chart types** (candlestick, volume charts)
-8. **Optimize API calls** with caching strategy
+1. **Integrate real Put/Call ratios** from CBOE data
+2. **Add sector rotation visualization** as hurricane paths
+3. **Implement storm prediction** using technical indicators
+4. **Create historical storm database** of major market events
+5. **Add sound effects** for different storm levels
+6. **Implement data persistence** with Cloudflare D1 for storm history
+7. **Add portfolio impact calculator** for storm damage assessment
+8. **Create API for storm alerts** to external services
 
-## Security Notes
-- API key is stored securely in environment variables
-- Never expose API keys in frontend code
-- All API calls are made server-side through Hono routes
-- Rate limiting should be implemented for production
+## Innovation Highlights
+- **Unique Visualization**: First-of-its-kind hurricane metaphor for market volatility
+- **Intuitive Interface**: Complex market data presented in weather terms everyone understands
+- **Real-time Analysis**: Automatic categorization and alert system
+- **Educational Value**: Makes market volatility accessible to non-traders
+- **Psychological Insight**: VIX as "fear gauge" visualized as storm intensity
 
-## Alpha Vantage API Limits
+## Alpha Vantage API Notes
 - Free tier: 25 requests per day
-- Standard tier: 75 requests per minute
-- If you see "API call frequency limit" errors, wait a minute and try again
+- The tracker makes ~5 API calls per refresh
+- Consider caching for production deployment
+- Upgrade API tier for more frequent updates
 
-## Support
-For issues or questions about the Alpha Vantage API, visit: https://www.alphavantage.co/documentation/
+## Security
+- API key stored securely in environment variables
+- All API calls made server-side through Hono
+- No sensitive data exposed to frontend
+
+---
+
+*"When the markets get stormy, track them like a hurricane!"* 🌀

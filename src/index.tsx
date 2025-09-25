@@ -18,211 +18,312 @@ app.use('/static/*', serveStatic({ root: './public' }))
 // Use the renderer
 app.use(renderer)
 
-// Home page
+// Home page - SPY Hurricane Tracker
 app.get('/', (c) => {
   return c.render(
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div class="container mx-auto px-4 py-8">
-        <header class="mb-8">
-          <h1 class="text-4xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-chart-line mr-3 text-indigo-600"></i>
-            Stock Market Dashboard
+    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+      {/* Animated background effect */}
+      <div class="fixed inset-0 opacity-20 bg-grid"></div>
+
+      <div class="relative z-10 container mx-auto px-4 py-6">
+        {/* Header */}
+        <header class="text-center mb-8">
+          <h1 class="text-5xl font-bold mb-2 flex items-center justify-center">
+            <i class="fas fa-hurricane mr-4 text-yellow-400 animate-spin-slow"></i>
+            SPY Hurricane Tracker
+            <i class="fas fa-satellite mr-4 ml-4 text-blue-400"></i>
           </h1>
-          <p class="text-gray-600">Real-time stock data powered by Alpha Vantage</p>
+          <p class="text-xl text-gray-300">Tracking Market Storms in Real-Time</p>
+          <div class="mt-4 flex justify-center gap-8">
+            <div class="text-sm">
+              <i class="fas fa-clock mr-1"></i>
+              <span id="currentTime">Loading...</span>
+            </div>
+            <div class="text-sm">
+              <i class="fas fa-calendar mr-1"></i>
+              <span id="currentDate">Loading...</span>
+            </div>
+          </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Search Section */}
-          <div class="lg:col-span-1">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-              <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                <i class="fas fa-search mr-2"></i>Search Stock
-              </h2>
-              <div class="space-y-4">
-                <input
-                  type="text"
-                  id="stockSymbol"
-                  placeholder="Enter symbol (e.g., AAPL)"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <select id="functionType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option value="GLOBAL_QUOTE">Current Price</option>
-                  <option value="TIME_SERIES_DAILY">Daily Series</option>
-                  <option value="TIME_SERIES_WEEKLY">Weekly Series</option>
-                  <option value="TIME_SERIES_MONTHLY">Monthly Series</option>
-                </select>
-                <button
-                  onclick="fetchStockData()"
-                  class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <i class="fas fa-chart-bar mr-2"></i>Get Data
-                </button>
-              </div>
+        {/* Alert Banner */}
+        <div id="alertBanner" class="mb-6 hidden">
+          <div class="bg-red-900/50 border-2 border-red-500 rounded-lg p-4 flex items-center animate-pulse">
+            <i class="fas fa-exclamation-triangle text-3xl text-yellow-400 mr-4"></i>
+            <div>
+              <h3 class="text-xl font-bold">MARKET STORM WARNING</h3>
+              <p id="alertMessage" class="text-gray-200"></p>
+            </div>
+          </div>
+        </div>
 
-              {/* Popular Stocks */}
-              <div class="mt-6">
-                <h3 class="text-lg font-semibold mb-3 text-gray-700">Quick Access</h3>
-                <div class="flex flex-wrap gap-2">
-                  <button onclick="quickSearch('AAPL')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">AAPL</button>
-                  <button onclick="quickSearch('GOOGL')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">GOOGL</button>
-                  <button onclick="quickSearch('MSFT')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">MSFT</button>
-                  <button onclick="quickSearch('AMZN')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">AMZN</button>
-                  <button onclick="quickSearch('TSLA')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">TSLA</button>
-                  <button onclick="quickSearch('META')" class="px-3 py-1 bg-gray-100 rounded-full hover:bg-gray-200 text-sm">META</button>
+        {/* Main Grid */}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Panel - Storm Status */}
+          <div class="lg:col-span-1 space-y-6">
+            
+            {/* Current Conditions */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-wind mr-3 text-cyan-400"></i>
+                Current Conditions
+              </h2>
+              <div id="currentConditions" class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-400">SPY Price</span>
+                  <span id="spyPrice" class="text-2xl font-bold">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-400">Change</span>
+                  <span id="spyChange" class="text-xl font-bold">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-400">Volatility (VIX)</span>
+                  <span id="vixLevel" class="text-xl font-bold">--</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-400">Volume Surge</span>
+                  <span id="volumeSurge" class="text-xl font-bold">--</span>
                 </div>
               </div>
             </div>
 
-            {/* Search Companies */}
-            <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
-              <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                <i class="fas fa-building mr-2"></i>Search Companies
+            {/* Storm Category */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-tornado mr-3 text-orange-400"></i>
+                Storm Category
               </h2>
-              <div class="space-y-4">
-                <input
-                  type="text"
-                  id="companyKeywords"
-                  placeholder="Company name or keywords"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <button
-                  onclick="searchCompanies()"
-                  class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <i class="fas fa-search mr-2"></i>Search
+              <div id="stormCategory" class="text-center py-4">
+                <div id="categoryIcon" class="text-6xl mb-3">
+                  <i class="fas fa-sun text-green-400"></i>
+                </div>
+                <h3 id="categoryName" class="text-2xl font-bold mb-2">Calm Markets</h3>
+                <p id="categoryDesc" class="text-gray-400 text-sm">Normal trading conditions</p>
+                <div class="mt-4 bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <div id="categoryBar" class="h-full bg-green-500 transition-all duration-1000" style="width: 20%"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-xl font-bold mb-4">Quick Analysis</h2>
+              <div class="space-y-3">
+                <button onclick="analyzeMarket()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg transition-colors flex items-center justify-center">
+                  <i class="fas fa-satellite-dish mr-2"></i>
+                  Scan Market Conditions
+                </button>
+                <button onclick="loadHistoricalStorms()" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg transition-colors flex items-center justify-center">
+                  <i class="fas fa-history mr-2"></i>
+                  Historical Storms
+                </button>
+                <button onclick="predictNextStorm()" class="w-full bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg transition-colors flex items-center justify-center">
+                  <i class="fas fa-crystal-ball mr-2"></i>
+                  Storm Forecast
                 </button>
               </div>
-              <div id="searchResults" class="mt-4 max-h-64 overflow-y-auto"></div>
             </div>
           </div>
 
-          {/* Data Display Section */}
-          <div class="lg:col-span-2">
-            {/* Current Quote Display */}
-            <div id="quoteDisplay" class="bg-white rounded-lg shadow-lg p-6 mb-6 hidden">
-              <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                <i class="fas fa-dollar-sign mr-2"></i>Current Quote
+          {/* Center Panel - Hurricane Visualization */}
+          <div class="lg:col-span-2 space-y-6">
+            
+            {/* Hurricane Eye Visualization */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-radar mr-3 text-green-400"></i>
+                Market Hurricane Radar
               </h2>
-              <div id="quoteContent"></div>
-            </div>
-
-            {/* Chart Display */}
-            <div class="bg-white rounded-lg shadow-lg p-6">
-              <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                <i class="fas fa-chart-area mr-2"></i>Price Chart
-              </h2>
-              <canvas id="stockChart"></canvas>
-              <div id="chartMessage" class="text-gray-500 text-center py-8">
-                <i class="fas fa-info-circle text-4xl mb-2"></i>
-                <p>Search for a stock to display chart data</p>
+              <div class="relative">
+                <canvas id="hurricaneRadar" class="w-full" height="400"></canvas>
+                <div id="radarOverlay" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div class="text-center">
+                    <div id="hurricaneEye" class="w-32 h-32 rounded-full border-4 border-yellow-400 animate-pulse relative">
+                      <div class="absolute inset-0 rounded-full border-2 border-orange-400 animate-spin-slow"></div>
+                      <div class="absolute inset-0 rounded-full border-2 border-red-400 animate-spin-slow-reverse"></div>
+                      <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="stormIntensity" class="text-2xl font-bold">0%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Time Series Table */}
-            <div id="dataTable" class="bg-white rounded-lg shadow-lg p-6 mt-6 hidden">
-              <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                <i class="fas fa-table mr-2"></i>Historical Data
+            {/* Volatility Chart */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-chart-line mr-3 text-cyan-400"></i>
+                Volatility Tracking
               </h2>
-              <div class="overflow-x-auto">
-                <table class="w-full">
-                  <thead id="tableHead"></thead>
-                  <tbody id="tableBody"></tbody>
-                </table>
+              <canvas id="volatilityChart" height="200"></canvas>
+            </div>
+
+            {/* Market Pressure Map */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-map mr-3 text-indigo-400"></i>
+                Market Pressure Systems
+              </h2>
+              <div class="grid grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <i class="fas fa-arrow-up text-3xl text-green-400 mb-2"></i>
+                  <h3 class="font-bold">Buy Pressure</h3>
+                  <p id="buyPressure" class="text-2xl">--</p>
+                </div>
+                <div class="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <i class="fas fa-balance-scale text-3xl text-yellow-400 mb-2"></i>
+                  <h3 class="font-bold">Equilibrium</h3>
+                  <p id="equilibrium" class="text-2xl">--</p>
+                </div>
+                <div class="text-center p-4 bg-gray-700/50 rounded-lg">
+                  <i class="fas fa-arrow-down text-3xl text-red-400 mb-2"></i>
+                  <h3 class="font-bold">Sell Pressure</h3>
+                  <p id="sellPressure" class="text-2xl">--</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Storm Timeline */}
+            <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-timeline mr-3 text-purple-400"></i>
+                Storm Timeline
+              </h2>
+              <div id="stormTimeline" class="space-y-3">
+                <p class="text-gray-400 text-center">Loading storm data...</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Loading Indicator */}
-        <div id="loadingIndicator" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-          <div class="bg-white rounded-lg p-8 flex flex-col items-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
-            <p class="text-gray-700">Loading stock data...</p>
+        {/* Footer Stats */}
+        <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 text-center border border-gray-700">
+            <i class="fas fa-thermometer-half text-2xl text-red-400 mb-2"></i>
+            <h3 class="text-sm text-gray-400">Market Temp</h3>
+            <p id="marketTemp" class="text-xl font-bold">--°F</p>
+          </div>
+          <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 text-center border border-gray-700">
+            <i class="fas fa-tachometer-alt text-2xl text-blue-400 mb-2"></i>
+            <h3 class="text-sm text-gray-400">Wind Speed</h3>
+            <p id="windSpeed" class="text-xl font-bold">-- mph</p>
+          </div>
+          <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 text-center border border-gray-700">
+            <i class="fas fa-compress-arrows-alt text-2xl text-purple-400 mb-2"></i>
+            <h3 class="text-sm text-gray-400">Pressure</h3>
+            <p id="pressure" class="text-xl font-bold">-- mb</p>
+          </div>
+          <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 text-center border border-gray-700">
+            <i class="fas fa-eye text-2xl text-yellow-400 mb-2"></i>
+            <h3 class="text-sm text-gray-400">Visibility</h3>
+            <p id="visibility" class="text-xl font-bold">-- mi</p>
           </div>
         </div>
+      </div>
 
-        {/* Error Display */}
-        <div id="errorDisplay" class="fixed bottom-4 right-4 max-w-md hidden">
-          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg">
-            <strong class="font-bold mr-2">Error!</strong>
-            <span id="errorMessage"></span>
-            <button onclick="document.getElementById('errorDisplay').classList.add('hidden')" class="ml-4">
-              <i class="fas fa-times"></i>
-            </button>
+      {/* Loading Overlay */}
+      <div id="loadingOverlay" class="fixed inset-0 bg-black/75 flex items-center justify-center hidden z-50">
+        <div class="text-center">
+          <div class="relative">
+            <i class="fas fa-hurricane text-6xl text-yellow-400 animate-spin"></i>
           </div>
+          <p class="mt-4 text-xl">Scanning Market Conditions...</p>
         </div>
       </div>
 
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-      <script src="/static/app.js"></script>
+      <script src="/static/hurricane.js"></script>
     </div>,
-    { title: 'Stock Market Dashboard' }
+    { title: 'SPY Hurricane Tracker - Market Storm Analysis' }
   )
 })
 
-// API route for stock quote
-app.get('/api/quote/:symbol', async (c) => {
-  const symbol = c.req.param('symbol')
+// API Routes
+app.get('/api/spy/current', async (c) => {
   const apiKey = c.env.ALPHA_VANTAGE_API_KEY
-
+  
   try {
-    const response = await fetch(
-      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`
-    )
-    const data = await response.json()
-    return c.json(data)
+    const [spyResponse, vixResponse] = await Promise.all([
+      fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${apiKey}`),
+      fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=VIX&apikey=${apiKey}`)
+    ])
+    
+    const [spyData, vixData] = await Promise.all([
+      spyResponse.json(),
+      vixResponse.json()
+    ])
+    
+    return c.json({ spy: spyData, vix: vixData })
   } catch (error) {
-    return c.json({ error: 'Failed to fetch stock data' }, 500)
+    return c.json({ error: 'Failed to fetch market data' }, 500)
   }
 })
 
-// API route for time series data
-app.get('/api/timeseries/:function/:symbol', async (c) => {
-  const functionType = c.req.param('function')
-  const symbol = c.req.param('symbol')
+app.get('/api/spy/intraday', async (c) => {
   const apiKey = c.env.ALPHA_VANTAGE_API_KEY
-
+  
   try {
     const response = await fetch(
-      `https://www.alphavantage.co/query?function=${functionType}&symbol=${symbol}&apikey=${apiKey}`
+      `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=SPY&interval=5min&apikey=${apiKey}`
     )
     const data = await response.json()
     return c.json(data)
   } catch (error) {
-    return c.json({ error: 'Failed to fetch time series data' }, 500)
+    return c.json({ error: 'Failed to fetch intraday data' }, 500)
   }
 })
 
-// API route for symbol search
-app.get('/api/search/:keywords', async (c) => {
-  const keywords = c.req.param('keywords')
+app.get('/api/spy/daily', async (c) => {
   const apiKey = c.env.ALPHA_VANTAGE_API_KEY
-
+  
   try {
     const response = await fetch(
-      `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${keywords}&apikey=${apiKey}`
+      `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=SPY&outputsize=compact&apikey=${apiKey}`
     )
     const data = await response.json()
     return c.json(data)
   } catch (error) {
-    return c.json({ error: 'Failed to search symbols' }, 500)
+    return c.json({ error: 'Failed to fetch daily data' }, 500)
   }
 })
 
-// API route for company overview
-app.get('/api/company/:symbol', async (c) => {
-  const symbol = c.req.param('symbol')
+app.get('/api/spy/volatility', async (c) => {
   const apiKey = c.env.ALPHA_VANTAGE_API_KEY
-
+  
   try {
+    // Get historical volatility data
     const response = await fetch(
-      `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${apiKey}`
+      `https://www.alphavantage.co/query?function=BBANDS&symbol=SPY&interval=daily&time_period=20&series_type=close&apikey=${apiKey}`
     )
     const data = await response.json()
     return c.json(data)
   } catch (error) {
-    return c.json({ error: 'Failed to fetch company overview' }, 500)
+    return c.json({ error: 'Failed to fetch volatility data' }, 500)
+  }
+})
+
+app.get('/api/market/indicators', async (c) => {
+  const apiKey = c.env.ALPHA_VANTAGE_API_KEY
+  
+  try {
+    // Get RSI and other indicators
+    const [rsiResponse, macdResponse] = await Promise.all([
+      fetch(`https://www.alphavantage.co/query?function=RSI&symbol=SPY&interval=daily&time_period=14&series_type=close&apikey=${apiKey}`),
+      fetch(`https://www.alphavantage.co/query?function=MACD&symbol=SPY&interval=daily&series_type=close&apikey=${apiKey}`)
+    ])
+    
+    const [rsiData, macdData] = await Promise.all([
+      rsiResponse.json(),
+      macdResponse.json()
+    ])
+    
+    return c.json({ rsi: rsiData, macd: macdData })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch indicators' }, 500)
   }
 })
 

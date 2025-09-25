@@ -1,6 +1,104 @@
-/* Custom styles for Stock Market Dashboard */
+/* SPY Hurricane Tracker - Custom Styles */
 
-/* Loading spinner animation */
+/* Hurricane eye animation */
+@keyframes hurricane-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5),
+                0 0 40px rgba(251, 191, 36, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.8),
+                0 0 80px rgba(251, 191, 36, 0.5);
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.5);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.5);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Radar overlay effects */
+#radarOverlay {
+  pointer-events: none;
+}
+
+#hurricaneEye {
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Storm intensity colors */
+.storm-calm { color: #10b981; }
+.storm-light { color: #fbbf24; }
+.storm-moderate { color: #fb923c; }
+.storm-severe { color: #f97316; }
+.storm-extreme { color: #ef4444; }
+.storm-catastrophic { color: #a855f7; }
+
+/* Alert animation */
+@keyframes alert-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-alert {
+  animation: alert-pulse 1s ease-in-out infinite;
+}
+
+/* Background grid effect */
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Glass morphism effects */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Glow effects for buttons */
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.glow-yellow {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+/* Chart container styling */
+canvas {
+  max-height: 400px;
+}
+
+/* Loading spinner */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -10,105 +108,63 @@
   animation: spin 1s linear infinite;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Chart container */
-#stockChart {
-  max-height: 400px;
-}
-
-/* Table styles */
-table {
-  border-collapse: collapse;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  #hurricaneEye {
+    width: 80px;
+    height: 80px;
+  }
 }
 
 /* Hover effects */
 .hover-scale {
-  transition: transform 0.2s;
+  transition: transform 0.2s ease-in-out;
 }
 
 .hover-scale:hover {
   transform: scale(1.05);
 }
 
-/* Glass morphism effect for cards */
-.glass {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(to right, #4f46e5, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Custom animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-
-/* Error message animation */
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-#errorDisplay:not(.hidden) {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Search result hover */
-#searchResults > div:hover {
-  background-color: rgba(243, 244, 246, 0.8);
-  transition: background-color 0.2s;
-}
-
 /* Button press effect */
 button:active {
   transform: scale(0.98);
+}
+
+/* Wind animation */
+@keyframes wind-blow {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+  100% { transform: translateX(0); }
+}
+
+.wind-effect {
+  animation: wind-blow 3s ease-in-out infinite;
+}
+
+/* Storm warning border animation */
+@keyframes border-flash {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.5); }
+  50% { border-color: rgba(239, 68, 68, 1); }
+}
+
+.storm-warning {
+  animation: border-flash 1s ease-in-out infinite;
+}
+
+/* Pressure system indicators */
+.pressure-high {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.pressure-low {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+}
+
+.pressure-neutral {
+  background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
 }
