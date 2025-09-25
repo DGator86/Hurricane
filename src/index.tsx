@@ -4,9 +4,11 @@ import { serveStatic } from 'hono/cloudflare-workers'
 import { renderer } from './renderer'
 import { PredictionEngine, OptionsScanner, TechnicalAnalysis, HurricaneModel, type Candle, type Prediction, type OptionsRecommendation } from './models/prediction'
 import { MarketDataService } from './market-data'
+import { FinnhubDataService } from './finnhub-data'
 
 type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
+  FINNHUB_API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -297,13 +299,13 @@ app.get('/', (c) => {
 
 // API Routes - Prediction System
 
-// Get current market data with predictions
+// Get current market data with predictions (using Finnhub)
 app.get('/api/predict/current', async (c) => {
-  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
   
   try {
-    // Fetch REAL market data
-    const { candles, vix, currentPrice } = await marketData.getMarketDataForPrediction('1h')
+    // Fetch REAL market data from Finnhub
+    const { candles, vix, currentPrice } = await finnhub.getMarketDataForPrediction('1h')
     
     // Generate prediction using REAL data
     const prediction = PredictionEngine.generatePrediction(candles, '1h', vix)
@@ -314,7 +316,7 @@ app.get('/api/predict/current', async (c) => {
       price: currentPrice,
       vix: vix,
       prediction: prediction,
-      dataSource: 'Alpha Vantage Live Data'
+      dataSource: 'Finnhub Live Data'
     }
     
     setCachedData('current_prediction', data)
@@ -325,25 +327,23 @@ app.get('/api/predict/current', async (c) => {
   }
 })
 
-// Get predictions for all timeframes
+// Get predictions for all timeframes (using Finnhub)
 app.get('/api/predict/all', async (c) => {
-  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
   
   try {
     const timeframes = ['15m', '1h', '4h', '1d', '1w']
     const predictions: Prediction[] = []
     
-    // Fetch real market data once
-    const [intradayCandles, dailyCandles, vix, quote] = await Promise.all([
-      marketData.getIntradayData('5min'),
-      marketData.getDailyData('full'),
-      marketData.getCurrentVIXLevel(),
-      marketData.getCurrentSPYQuote()
+    // Fetch real market data from Finnhub
+    const [vix, quote] = await Promise.all([
+      finnhub.getCurrentVIXLevel(),
+      finnhub.getCurrentSPYQuote()
     ])
     
+    // Get appropriate candles for each timeframe
     for (const tf of timeframes) {
-      // Use appropriate candles based on timeframe
-      const candles = (tf === '15m' || tf === '1h') ? intradayCandles : dailyCandles
+      const { candles } = await finnhub.getMarketDataForPrediction(tf)
       const prediction = PredictionEngine.generatePrediction(candles, tf, vix)
       predictions.push(prediction)
     }
@@ -352,7 +352,7 @@ app.get('/api/predict/all', async (c) => {
       predictions,
       currentPrice: quote.price,
       vix: vix,
-      dataSource: 'Alpha Vantage Live Data'
+      dataSource: 'Finnhub Live Data'
     })
   } catch (error) {
     console.error('Error fetching real market data:', error)
@@ -440,22 +440,24 @@ app.get('/api/realmarket/indicators', async (c) => {
   }
 })
 
-// Get REAL SPY and VIX data
+// Get REAL SPY and VIX data (using Finnhub)
 app.get('/api/realdata/spy', async (c) => {
-  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
   
   try {
-    const [spyQuote, vixLevel, intradayData] = await Promise.all([
-      marketData.getCurrentSPYQuote(),
-      marketData.getCurrentVIXLevel(),
-      marketData.getIntradayData('5min')
+    const [spyQuote, vixLevel, intradayData, marketStatus] = await Promise.all([
+      finnhub.getCurrentSPYQuote(),
+      finnhub.getCurrentVIXLevel(),
+      finnhub.getIntradayData(),
+      finnhub.getMarketStatus()
     ])
     
     return c.json({
       spy: spyQuote,
       vix: vixLevel,
       recentCandles: intradayData.slice(-20), // Last 20 candles
-      dataSource: 'Alpha Vantage Live Data',
+      marketStatus: marketStatus,
+      dataSource: 'Finnhub Live Data',
       timestamp: new Date().toISOString()
     })
   } catch (error) {
