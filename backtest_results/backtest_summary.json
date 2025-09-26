@@ -1,79 +1,79 @@
 {
-  "total_trades": 60,
-  "winning_trades": 8,
-  "losing_trades": 52,
-  "total_r_multiple": 182.66408289683045,
-  "avg_r_multiple": 3.0444013816138407,
+  "total_trades": 132,
+  "winning_trades": 36,
+  "losing_trades": 96,
+  "total_r_multiple": 5358.498121867133,
+  "avg_r_multiple": 40.59468274141767,
   "by_timeframe": {
     "1m": {
-      "trades": 10,
-      "wins": 3,
-      "total_r": 138.70134988236444,
-      "within_cone": 1,
-      "win_rate": 0.3,
-      "avg_r": 13.870134988236444,
-      "cone_accuracy": 0.1
+      "trades": 22,
+      "wins": 5,
+      "total_r": 2848.892548547021,
+      "within_cone": 0,
+      "win_rate": 0.22727272727272727,
+      "avg_r": 129.4951158430464,
+      "cone_accuracy": 0.0
     },
     "5m": {
-      "trades": 10,
-      "wins": 2,
-      "total_r": 41.361743805289024,
-      "within_cone": 1,
-      "win_rate": 0.2,
-      "avg_r": 4.136174380528902,
-      "cone_accuracy": 0.1
+      "trades": 22,
+      "wins": 8,
+      "total_r": 1387.9788882019805,
+      "within_cone": 0,
+      "win_rate": 0.36363636363636365,
+      "avg_r": 63.089949463726384,
+      "cone_accuracy": 0.0
     },
     "15m": {
-      "trades": 10,
-      "wins": 0,
-      "total_r": -2.0,
+      "trades": 22,
+      "wins": 7,
+      "total_r": 650.0388362726087,
       "within_cone": 1,
-      "win_rate": 0.0,
-      "avg_r": -0.2,
-      "cone_accuracy": 0.1
+      "win_rate": 0.3181818181818182,
+      "avg_r": 29.547219830573123,
+      "cone_accuracy": 0.045454545454545456
     },
     "1h": {
-      "trades": 10,
-      "wins": 3,
-      "total_r": 7.600989209176977,
-      "within_cone": 3,
-      "win_rate": 0.3,
-      "avg_r": 0.7600989209176977,
-      "cone_accuracy": 0.3
+      "trades": 22,
+      "wins": 4,
+      "total_r": 214.8633785442364,
+      "within_cone": 1,
+      "win_rate": 0.18181818181818182,
+      "avg_r": 9.7665172065562,
+      "cone_accuracy": 0.045454545454545456
     },
     "4h": {
-      "trades": 10,
-      "wins": 0,
-      "total_r": -1.0,
-      "within_cone": 6,
-      "win_rate": 0.0,
-      "avg_r": -0.1,
-      "cone_accuracy": 0.6
+      "trades": 22,
+      "wins": 6,
+      "total_r": 160.78785901551572,
+      "within_cone": 1,
+      "win_rate": 0.2727272727272727,
+      "avg_r": 7.308539046159805,
+      "cone_accuracy": 0.045454545454545456
     },
     "1d": {
-      "trades": 10,
-      "wins": 0,
-      "total_r": -2.0,
-      "within_cone": 8,
-      "win_rate": 0.0,
-      "avg_r": -0.2,
-      "cone_accuracy": 0.8
+      "trades": 22,
+      "wins": 6,
+      "total_r": 95.93661128577257,
+      "within_cone": 1,
+      "win_rate": 0.2727272727272727,
+      "avg_r": 4.360755058444208,
+      "cone_accuracy": 0.045454545454545456
     }
   },
   "by_regime": {
     "TREND": {
-      "trades": 60,
-      "wins": 8,
-      "total_r": 182.66408289683045,
-      "win_rate": 0.13333333333333333,
-      "avg_r": 3.0444013816138407
+      "trades": 132,
+      "wins": 36,
+      "total_r": 5358.498121867133,
+      "win_rate": 0.2727272727272727,
+      "avg_r": 40.59468274141767
     }
   },
   "cone_calibration": {
-    "within_10pct": 0.0759493670886076,
-    "within_25pct": 0.16455696202531644,
-    "within_50pct": 0.25316455696202533,
-    "outside_50pct": 0.5063291139240507
+    "within_10pct": 0.021739130434782608,
+    "within_25pct": 0.021739130434782608,
+    "within_50pct": 0.028985507246376812,
+    "outside_50pct": 0.927536231884058
   },
-  "win_rate": 0.13333333333333333
+  "win_rate": 0.2727272727272727
 }

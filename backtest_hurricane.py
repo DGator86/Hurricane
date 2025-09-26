@@ -63,7 +63,7 @@ class HurricaneBacktest:
                     'high': float(row['High']),
                     'low': float(row['Low']),
                     'close': float(row['Close']),
-                    'volume': int(row['Volume'])
+                    'volume': int(float(row['Volume']))
                 }
     
     def create_spy_template(self):

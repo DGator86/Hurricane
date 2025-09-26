@@ -1,0 +1,214 @@
+{
+  "success": true,
+  "timestamp": "2025-09-05T09:30:00Z",
+  "currentPrice": 576.5290620820363,
+  "dataSource": "Synthetic Historical",
+  "regime": {
+    "state": "TREND",
+    "current": "TREND",
+    "probability": 0.8468276706510105
+  },
+  "confidence": {
+    "overall": 0.3479091300867324,
+    "1m": 0.5,
+    "5m": 0.5,
+    "15m": 0.5,
+    "1h": 0.5,
+    "4h": 0.5,
+    "1d": 0.5
+  },
+  "predictions": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 577.2,
+      "cone_lower": 575.86,
+      "upperBound": 577.2,
+      "lowerBound": 575.86,
+      "confidence": 0.5
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 578.21,
+      "cone_lower": 574.85,
+      "upperBound": 578.21,
+      "lowerBound": 574.85,
+      "confidence": 0.5
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 579.89,
+      "cone_lower": 573.17,
+      "upperBound": 579.89,
+      "lowerBound": 573.17,
+      "confidence": 0.5
+    },
+    "1h": {
+      "direction": "BULLISH",
+      "target": 579.89,
+      "stop_loss": 574.85,
+      "stopLoss": 574.85,
+      "cone_upper": 583.25,
+      "cone_lower": 569.81,
+      "upperBound": 583.25,
+      "lowerBound": 569.81,
+      "confidence": 0.5
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 589.97,
+      "cone_lower": 563.09,
+      "upperBound": 589.97,
+      "lowerBound": 563.09,
+      "confidence": 0.5
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 596.68,
+      "cone_lower": 556.37,
+      "upperBound": 596.68,
+      "lowerBound": 556.37,
+      "confidence": 0.5
+    }
+  },
+  "forecasts": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 577.2,
+      "cone_lower": 575.86,
+      "upperBound": 577.2,
+      "lowerBound": 575.86,
+      "confidence": 0.5
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 578.21,
+      "cone_lower": 574.85,
+      "upperBound": 578.21,
+      "lowerBound": 574.85,
+      "confidence": 0.5
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 579.89,
+      "cone_lower": 573.17,
+      "upperBound": 579.89,
+      "lowerBound": 573.17,
+      "confidence": 0.5
+    },
+    "1h": {
+      "direction": "BULLISH",
+      "target": 579.89,
+      "stop_loss": 574.85,
+      "stopLoss": 574.85,
+      "cone_upper": 583.25,
+      "cone_lower": 569.81,
+      "upperBound": 583.25,
+      "lowerBound": 569.81,
+      "confidence": 0.5
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 589.97,
+      "cone_lower": 563.09,
+      "upperBound": 589.97,
+      "lowerBound": 563.09,
+      "confidence": 0.5
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 576.53,
+      "stop_loss": 576.53,
+      "stopLoss": 576.53,
+      "cone_upper": 596.68,
+      "cone_lower": 556.37,
+      "upperBound": 596.68,
+      "lowerBound": 556.37,
+      "confidence": 0.5
+    }
+  },
+  "forecast": {
+    "expectedPrice": 579.8883793450491,
+    "cone": {
+      "upper80": 600.5237152225023,
+      "upper60": 593.3487869234652,
+      "median": 579.8883793450491,
+      "lower40": 571.7092145635471,
+      "lower20": 559.9621196888696
+    },
+    "directionalScore": 0.21267940762657897,
+    "confidence": 0.3479091300867324,
+    "signal": "NEUTRAL"
+  },
+  "optionTrade": {
+    "side": "CALL",
+    "strike": 593,
+    "expiry": 0,
+    "targetDelta": 0.4,
+    "entryPrice": 0,
+    "targetExit": 593.3487869234652,
+    "stopLoss": 0,
+    "confidence": 0.3479091300867324,
+    "reasoning": "CALL - D:0.21, Regime:undefined, GEX:-1",
+    "greeks": {}
+  },
+  "option_recommendation": {
+    "type": "CALL",
+    "strike": 593,
+    "expiry": 0,
+    "stop_loss": 0,
+    "confidence": 0.3479091300867324,
+    "greeks": {}
+  },
+  "kellySizing": 0.1,
+  "kelly_size": 0.1,
+  "flowMetrics": {
+    "gex": -47.83561082692463,
+    "dix": 0.42,
+    "vanna": -641.7470277604212,
+    "charm": -3235.459952501216
+  },
+  "flow_metrics": {
+    "gex": -47.83561082692463,
+    "dix": 0.42,
+    "vanna": -641.7470277604212,
+    "charm": -3235.459952501216
+  },
+  "metrics": {
+    "vix": 19.904794100272355,
+    "rsi": 33.63882604033992,
+    "macd": {
+      "value": -0.7533611159006348,
+      "signal": -0.410306777015379,
+      "histogram": -0.08127639069214143
+    },
+    "gex": -47.83561082692463,
+    "darkPoolBias": 0.1633654447376509
+  }
+}
