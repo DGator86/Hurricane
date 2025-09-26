@@ -452,22 +452,28 @@ app.get('/api/realmarket/indicators', async (c) => {
 
 // Get REAL SPY and VIX data (using Finnhub)
 app.get('/api/realdata/spy', async (c) => {
-  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
+  // Use Polygon.io as PRIMARY, with fallbacks
+  const enhancedMarket = new EnhancedMarketDataService(
+    c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+    c.env.ALPHA_VANTAGE_API_KEY
+  )
   
   try {
-    const [spyQuote, vixLevel, intradayData, marketStatus] = await Promise.all([
-      finnhub.getCurrentSPYQuote(),
-      finnhub.getCurrentVIXLevel(),
-      finnhub.getIntradayData(),
-      finnhub.getMarketStatus()
-    ])
+    // Get comprehensive market data from Polygon (PRIMARY)
+    const marketStatus = await enhancedMarket.getMarketStatus()
+    const historicalData = await enhancedMarket.getHistoricalData('5min', 'compact')
     
     return c.json({
-      spy: spyQuote,
-      vix: vixLevel,
-      recentCandles: intradayData.slice(-20), // Last 20 candles
-      marketStatus: marketStatus,
-      dataSource: 'Finnhub Live Data',
+      spy: marketStatus.spy,
+      vix: marketStatus.vix,
+      rsi: marketStatus.rsi,
+      macd: marketStatus.macd,
+      recentCandles: historicalData.slice(0, 20),
+      marketStatus: {
+        isOpen: new Date().getHours() >= 9 && new Date().getHours() < 16,
+        session: 'regular'
+      },
+      dataSource: marketStatus.dataSource,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
