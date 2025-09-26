@@ -13,6 +13,7 @@ import {
   type MarketEvent
 } from '../models/MarketMeteorology'
 import { EnhancedMarketDataService } from '../market-data-enhanced'
+import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
 
 const meteorologyApi = new Hono()
 
@@ -20,7 +21,90 @@ const meteorologyApi = new Hono()
 const meteorologySystem = new MarketMeteorologySystem()
 
 /**
- * Get full Market Meteorology prediction
+ * Get ENHANCED prediction with all Hurricane features (75% accuracy target)
+ */
+meteorologyApi.get('/predict/enhanced', async (c) => {
+  try {
+    const asof = c.req.query('asof')
+    
+    // Initialize the integrated system
+    const integratedSystem = new IntegratedPredictionSystem(
+      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
+    )
+    
+    // Generate comprehensive prediction
+    const prediction = await integratedSystem.generatePrediction(asof)
+    
+    // Format response for backtesting compatibility
+    const timeframePredictions: any = {}
+    const confidences: any = { overall: prediction.overallConfidence }
+    
+    Object.entries(prediction.predictions).forEach(([tf, pred]) => {
+      timeframePredictions[tf] = {
+        direction: pred.direction.replace('STRONG_', '').replace('_', ''),
+        target: pred.targetPrice,
+        stop_loss: pred.stopLoss,
+        stopLoss: pred.stopLoss,
+        cone_upper: pred.targetPrice * 1.02,
+        cone_lower: pred.stopLoss * 0.98,
+        upperBound: pred.targetPrice * 1.02,
+        lowerBound: pred.stopLoss * 0.98,
+        confidence: pred.confidence,
+        reasons: pred.reasons,
+        riskReward: pred.riskReward,
+        kellySize: pred.kellySize
+      }
+      confidences[tf] = pred.confidence
+    })
+    
+    return c.json({
+      success: true,
+      timestamp: prediction.timestamp,
+      currentPrice: prediction.currentPrice,
+      dataSource: 'Integrated Hurricane System v2',
+      
+      // Regime
+      regime: {
+        state: prediction.marketRegime,
+        current: prediction.marketRegime
+      },
+      
+      // Confidence
+      confidence: confidences,
+      
+      // Predictions
+      predictions: timeframePredictions,
+      forecasts: timeframePredictions,
+      
+      // Kelly sizing
+      kellySizing: prediction.kellySizing,
+      kelly_size: prediction.kellySizing,
+      
+      // Critical levels
+      criticalLevels: prediction.criticalLevels,
+      
+      // Warnings
+      warnings: prediction.warnings,
+      
+      // Strongest signal
+      strongestSignal: {
+        timeframe: prediction.strongestSignal,
+        prediction: prediction.predictions[prediction.strongestSignal]
+      }
+    })
+  } catch (error) {
+    console.error('Enhanced prediction error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to generate enhanced prediction',
+      message: error.message
+    }, 500)
+  }
+})
+
+/**
+ * Get full Market Meteorology prediction (original)
  */
 meteorologyApi.get('/predict', async (c) => {
   try {

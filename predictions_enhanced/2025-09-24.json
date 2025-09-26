@@ -1,0 +1,280 @@
+{
+  "success": true,
+  "timestamp": "2025-09-26T19:23:56.149Z",
+  "currentPrice": 573.6025990163174,
+  "dataSource": "Integrated Hurricane System v2",
+  "regime": {
+    "state": "RANGING | EXTREME_VOL",
+    "current": "RANGING | EXTREME_VOL"
+  },
+  "confidence": {
+    "overall": 0.1584,
+    "1m": 0.1584,
+    "5m": 0.1584,
+    "15m": 0.1584,
+    "1h": 0.1584,
+    "4h": 0.1584,
+    "1d": 0.1584
+  },
+  "predictions": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    }
+  },
+  "forecasts": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 573.6025990163174,
+      "stop_loss": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "cone_upper": 585.0746509966438,
+      "cone_lower": 562.1305470359911,
+      "upperBound": 585.0746509966438,
+      "lowerBound": 562.1305470359911,
+      "confidence": 0.1584,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "riskReward": null,
+      "kellySize": 0
+    }
+  },
+  "kellySizing": 0,
+  "kelly_size": 0,
+  "criticalLevels": {
+    "support": [
+      562.1305470359911,
+      null,
+      null
+    ],
+    "resistance": [
+      585.0746509966438,
+      null,
+      null
+    ],
+    "vwap": 0
+  },
+  "warnings": [
+    "\u26a0\ufe0f Extreme volatility detected - reduce position size",
+    "\u26a0\ufe0f Low volume - signals may be less reliable"
+  ],
+  "strongestSignal": {
+    "timeframe": "1m",
+    "prediction": {
+      "direction": "NEUTRAL",
+      "confidence": 0.1584,
+      "targetPrice": 573.6025990163174,
+      "stopLoss": 573.6025990163174,
+      "reasons": [
+        "Bearish MA alignment (all MAs stacked)",
+        "MACD approaching bearish cross"
+      ],
+      "timeframe": "1m",
+      "expectedMove": 0,
+      "riskReward": null,
+      "features": {
+        "rsi14": 50,
+        "macd": 0,
+        "macd_signal": 0,
+        "macd_crossover": "approaching_bearish",
+        "adx14": 25,
+        "bb_percentB": 0.5,
+        "volume_ratio": 0,
+        "vwap_distance": null,
+        "momentum_score": 0,
+        "trend_regime": "neutral",
+        "volatility_regime": "extreme",
+        "gex": -295476972.40593934,
+        "dix": 0.5299841692807842,
+        "put_call_ratio": 1.0316148358939172
+      },
+      "timestamp": 1758914636148,
+      "kellySize": 0
+    }
+  }
+}
