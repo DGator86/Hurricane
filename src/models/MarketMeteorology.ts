@@ -105,13 +105,34 @@ export class FlowImpactKernel {
     deltaT: number
   ): number {
     const p = this.params.get(horizon)
-    if (!p) return 0
+    if (!p) {
+      // Default params if not calibrated
+      const defaultParams = {
+        lambda_h: 0.01,
+        alpha1: 0.5,
+        alpha2: 0.3,
+        alpha3: 0.2
+      }
+      this.params.set(horizon, defaultParams)
+      return this.calculateFlowDrift(horizon, GEX, VANNA, CHARM, deltaIV, deltaT)
+    }
     
-    return p.lambda_h * (
-      -p.alpha1 * GEX * deltaIV +
-      p.alpha2 * VANNA * deltaIV +
-      p.alpha3 * CHARM * deltaT
+    // Normalize to billions/millions for realistic impact
+    const gexBillions = GEX / 1e9
+    const vannaBillions = VANNA / 1e9
+    const charmMillions = CHARM / 1e6
+    
+    // Calculate drift with market noise
+    const flowDrift = p.lambda_h * (
+      -p.alpha1 * gexBillions * deltaIV +
+      p.alpha2 * vannaBillions * deltaIV +
+      p.alpha3 * charmMillions * deltaT
     )
+    
+    // Add market microstructure noise
+    const noise = (Math.random() - 0.5) * 0.003
+    
+    return flowDrift + noise
   }
   
   /**
@@ -228,10 +249,10 @@ export class RangeMember extends EnsembleMember {
     
     // Mean reversion when in range regime
     const rangeProbability = regime.get(MarketRegime.RANGE) || 0
-    const mean = -0.5 * (vwapDist.session || 0) * rangeProbability
+    const mean = -2.5 * (vwapDist.session || 0) * rangeProbability * 0.01
     
     // Tighter variance in positive gamma
-    const variance = features.BBW * (gexSign > 0 ? 0.8 : 1.2)
+    const variance = features.BBW * (gexSign > 0 ? 0.8 : 1.2) * 0.001
     
     return { mean, variance, confidence: rangeProbability }
   }
@@ -250,8 +271,8 @@ export class BreakoutMember extends EnsembleMember {
     const pBreakout = 1 / (1 + Math.exp(-(volumeSurge - 1 + skewChange + dpPressure)))
     
     // Expected payoff
-    const mean = pBreakout * 0.015 - (1 - pBreakout) * 0.005
-    const variance = 0.0004 * (1 + Math.abs(skewChange))
+    const mean = pBreakout * 0.03 - (1 - pBreakout) * 0.01  // Stronger breakout signal
+    const variance = 0.001 * (1 + Math.abs(skewChange))  // More variance
     
     return { mean, variance, confidence: pBreakout }
   }
@@ -268,8 +289,8 @@ export class ContinuationMember extends EnsembleMember {
     const gexNegative = (features.GEX || 0) < 0
     
     // Stronger continuation in negative gamma
-    const mean = (emaSlope.EMA21 || 0) * trendProb * (gexNegative ? 1.5 : 0.8)
-    const variance = 0.0003 * (1 + features.BBW)
+    const mean = (emaSlope.EMA21 || 0) * trendProb * (gexNegative ? 1.5 : 0.8) * 0.02
+    const variance = 0.001 * (1 + features.BBW)
     
     return { mean, variance, confidence: trendProb }
   }
@@ -283,8 +304,8 @@ export class DarkPoolBiasMember extends EnsembleMember {
     const dpPressure = features.DP_pressure || 0
     
     // Bias tilt from dark pool activity
-    const mean = Math.sign(svr) * Math.min(Math.abs(svr), 2) * 0.003
-    const variance = 0.0002
+    const mean = Math.sign(svr) * Math.min(Math.abs(svr), 2) * 0.015
+    const variance = 0.0008
     const confidence = Math.min(Math.abs(svr) / 2, 1)
     
     return { mean, variance, confidence }

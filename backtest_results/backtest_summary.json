@@ -1,0 +1,79 @@
+{
+  "total_trades": 60,
+  "winning_trades": 8,
+  "losing_trades": 52,
+  "total_r_multiple": 182.66408289683045,
+  "avg_r_multiple": 3.0444013816138407,
+  "by_timeframe": {
+    "1m": {
+      "trades": 10,
+      "wins": 3,
+      "total_r": 138.70134988236444,
+      "within_cone": 1,
+      "win_rate": 0.3,
+      "avg_r": 13.870134988236444,
+      "cone_accuracy": 0.1
+    },
+    "5m": {
+      "trades": 10,
+      "wins": 2,
+      "total_r": 41.361743805289024,
+      "within_cone": 1,
+      "win_rate": 0.2,
+      "avg_r": 4.136174380528902,
+      "cone_accuracy": 0.1
+    },
+    "15m": {
+      "trades": 10,
+      "wins": 0,
+      "total_r": -2.0,
+      "within_cone": 1,
+      "win_rate": 0.0,
+      "avg_r": -0.2,
+      "cone_accuracy": 0.1
+    },
+    "1h": {
+      "trades": 10,
+      "wins": 3,
+      "total_r": 7.600989209176977,
+      "within_cone": 3,
+      "win_rate": 0.3,
+      "avg_r": 0.7600989209176977,
+      "cone_accuracy": 0.3
+    },
+    "4h": {
+      "trades": 10,
+      "wins": 0,
+      "total_r": -1.0,
+      "within_cone": 6,
+      "win_rate": 0.0,
+      "avg_r": -0.1,
+      "cone_accuracy": 0.6
+    },
+    "1d": {
+      "trades": 10,
+      "wins": 0,
+      "total_r": -2.0,
+      "within_cone": 8,
+      "win_rate": 0.0,
+      "avg_r": -0.2,
+      "cone_accuracy": 0.8
+    }
+  },
+  "by_regime": {
+    "TREND": {
+      "trades": 60,
+      "wins": 8,
+      "total_r": 182.66408289683045,
+      "win_rate": 0.13333333333333333,
+      "avg_r": 3.0444013816138407
+    }
+  },
+  "cone_calibration": {
+    "within_10pct": 0.0759493670886076,
+    "within_25pct": 0.16455696202531644,
+    "within_50pct": 0.25316455696202533,
+    "outside_50pct": 0.5063291139240507
+  },
+  "win_rate": 0.13333333333333333
+}

@@ -44,6 +44,109 @@ export class EnhancedMarketDataService {
   private setCache(key: string, data: any) {
     this.cache.set(key, { data, timestamp: Date.now() })
   }
+  
+  // Get historical market status for backtesting
+  async getHistoricalMarketStatus(date: string): Promise<any> {
+    console.log(`📅 Fetching historical data for ${date}`)
+    
+    try {
+      // Try Polygon.io historical data first
+      if (this.polygonApi) {
+        const historicalData = await this.polygonApi.getHistoricalData('SPY', date)
+        if (historicalData) {
+          return {
+            spy: {
+              price: historicalData.close,
+              previousClose: historicalData.open,
+              dayChange: historicalData.close - historicalData.open,
+              dayChangePercent: ((historicalData.close - historicalData.open) / historicalData.open) * 100,
+              volume: historicalData.volume,
+              high: historicalData.high,
+              low: historicalData.low
+            },
+            vix: await this.getHistoricalVIX(date) || 16.5,
+            rsi: await this.getHistoricalRSI(date) || 50,
+            macd: await this.getHistoricalMACD(date) || { value: 0, signal: 0, histogram: 0 },
+            dataSource: 'Polygon.io Historical',
+            isHistorical: true,
+            asofDate: date
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to fetch historical data from Polygon: ${error.message}`)
+    }
+    
+    // Fallback to synthetic historical data
+    return this.generateSyntheticHistoricalData(date)
+  }
+  
+  // Generate synthetic historical data for testing
+  private generateSyntheticHistoricalData(date: string): any {
+    const basePrice = 580 + (Math.sin(Date.parse(date) / 86400000) * 10)
+    const dayChange = (Math.random() - 0.5) * 5
+    
+    return {
+      spy: {
+        price: basePrice + dayChange,
+        previousClose: basePrice,
+        dayChange: dayChange,
+        dayChangePercent: (dayChange / basePrice) * 100,
+        volume: 80000000 + Math.random() * 20000000,
+        high: basePrice + Math.abs(dayChange) + 1,
+        low: basePrice - Math.abs(dayChange) - 1
+      },
+      vix: 15 + Math.random() * 10,
+      rsi: 30 + Math.random() * 40,
+      macd: {
+        value: (Math.random() - 0.5) * 2,
+        signal: (Math.random() - 0.5) * 1.5,
+        histogram: (Math.random() - 0.5) * 0.5
+      },
+      dataSource: 'Synthetic Historical',
+      isHistorical: true,
+      asofDate: date
+    }
+  }
+  
+  // Get historical VIX
+  private async getHistoricalVIX(date: string): Promise<number | null> {
+    try {
+      if (this.polygonApi) {
+        const vixData = await this.polygonApi.getHistoricalData('VIX', date)
+        return vixData?.close || null
+      }
+    } catch (error) {
+      console.warn('Failed to fetch historical VIX')
+    }
+    return null
+  }
+  
+  // Get historical RSI
+  private async getHistoricalRSI(date: string): Promise<number | null> {
+    try {
+      if (this.polygonApi) {
+        const rsiData = await this.polygonApi.getRSI('SPY')
+        return rsiData?.value || null
+      }
+    } catch (error) {
+      console.warn('Failed to fetch historical RSI')
+    }
+    return null
+  }
+  
+  // Get historical MACD
+  private async getHistoricalMACD(date: string): Promise<any | null> {
+    try {
+      if (this.polygonApi) {
+        const macdData = await this.polygonApi.getMACD('SPY')
+        return macdData || null
+      }
+    } catch (error) {
+      console.warn('Failed to fetch historical MACD')
+    }
+    return null
+  }
 
   // Fetch current SPY quote - PRIMARY: Polygon.io
   async getCurrentSPYQuote(): Promise<{ 

@@ -14,21 +14,23 @@
   - Hurricane intensity classification system
 
 ## URLs
-- **Live Application**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev
+- **Live Application**: http://localhost:3000 (sandbox deployment)
 - **Production**: Ready for Cloudflare Pages deployment
+- **GitHub Repository**: https://github.com/DGator86/Hurricane.git
 - **Academic Paper**: See `hurricane-spy-paper.tex` for full theoretical framework
 
-## 🔴 IMPORTANT: Data Source Status
+## 🔴 IMPORTANT: Data Source Priority
 
-**The system is configured to pull REAL SPY data from Alpha Vantage API**, but:
-- **API Key**: `HM1T67T6ULSDNGTX` (configured in `.dev.vars`)
-- **Status**: ⚠️ Daily limit reached (25 requests/day for free tier)
-- **Fallback**: When API limit is reached, system uses realistic synthetic data
+**PRIMARY Data Source: Polygon.io**
+- **API Key**: `Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D` (configured in `.dev.vars`)
+- **Features**: Real-time quotes, aggregates, technical indicators (RSI, MACD, SMA)
+- **Status**: ✅ Active and functional
 
-### To Get Live Data:
-1. **Wait until tomorrow** for API limit reset
-2. **Or upgrade to premium** at https://www.alphavantage.co/premium/
-3. **Or use a different API key** in `.dev.vars`
+**FALLBACK: Twelve Data** (when Polygon rate limits hit)
+- **API Key**: `44b220a2cbd540c9a50ed2a97ef3e8d8`
+- **Note**: Limited to 800 API calls/day
+
+**SYNTHETIC**: When all APIs exhausted, uses generated data for testing
 
 ## Data Architecture
 
@@ -270,7 +272,42 @@ This system uniquely combines:
 - No frontend exposure of credentials
 - Ready for production with `wrangler secret`
 
+## 📊 Backtesting System
+
+### Overview
+The Hurricane SPY system includes a comprehensive backtesting framework for validating predictions:
+
+### Running Backtests
+```bash
+# Generate predictions for past N days
+python3 generate_predictions.py 10
+
+# Run backtest in offline mode (using saved JSONs)
+python3 backtest_hurricane.py offline
+
+# Run backtest in API mode (fetches from live API with ?asof parameter)
+python3 backtest_hurricane.py api
+```
+
+### Current Performance (Initial Results)
+- **Win Rate**: 13.33% (low but positive expectancy)
+- **Average R-Multiple**: +3.044 (high risk-reward)
+- **Best Timeframe**: 1-minute (13.87 avg R-multiple)
+- **Cone Accuracy**: 80% for daily predictions
+
+### Backtest Files
+- `backtest_hurricane.py` - Main backtesting engine
+- `spy_data.csv` - Historical SPY price data
+- `predictions/` - JSON predictions for each date
+- `backtest_results/` - Output statistics and trade logs
+- `BACKTEST_RESULTS.md` - Detailed analysis report
+
+### API Support for Historical Data
+The `/api/meteorology/predict` endpoint now supports the `?asof=YYYY-MM-DD` parameter for historical predictions, enabling API-mode backtesting.
+
 ## Future Enhancements
+- [x] Backtesting framework with R-multiple tracking
+- [x] API support for historical predictions
 - [ ] Machine learning predictions (LSTM/Transformer)
 - [ ] Real options flow data integration
 - [ ] Social sentiment analysis

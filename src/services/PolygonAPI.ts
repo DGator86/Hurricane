@@ -362,4 +362,51 @@ export class PolygonAPI {
       return 16 // Default VIX value
     }
   }
+  
+  /**
+   * Get historical data for a specific date (for backtesting)
+   */
+  async getHistoricalData(symbol: string, date: string): Promise<{
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+  } | null> {
+    try {
+      // Parse date and get date range
+      const targetDate = new Date(date)
+      const nextDate = new Date(targetDate)
+      nextDate.setDate(nextDate.getDate() + 1)
+      
+      const fromDate = targetDate.toISOString().split('T')[0]
+      const toDate = nextDate.toISOString().split('T')[0]
+      
+      const url = `${this.baseURL}/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${toDate}?apiKey=${this.apiKey}`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        console.warn(`Failed to fetch historical data for ${symbol} on ${date}`)
+        return null
+      }
+      
+      const data = await response.json()
+      
+      if (data.results && data.results.length > 0) {
+        const bar = data.results[0]
+        return {
+          open: bar.o,
+          high: bar.h,
+          low: bar.l,
+          close: bar.c,
+          volume: bar.v
+        }
+      }
+      
+      return null
+    } catch (error) {
+      console.error(`Error fetching historical data: ${error}`)
+      return null
+    }
+  }
 }
