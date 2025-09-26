@@ -5,6 +5,7 @@ import { renderer } from './renderer'
 import { PredictionEngine, OptionsScanner, TechnicalAnalysis, HurricaneModel, type Candle, type Prediction, type OptionsRecommendation } from './models/prediction'
 import { MarketDataService } from './market-data'
 import { EnhancedMarketDataService } from './market-data-enhanced'
+import { meteorologyApi } from './api/meteorology'
 import { FinnhubDataService } from './finnhub-data'
 import { BacktestEngine } from './backtest'
 import { PredictionAccuracyAnalyzer } from './prediction-accuracy'
@@ -69,6 +70,9 @@ function generateSyntheticCandles(basePrice: number, count: number, volatility: 
 }
 
 // Home page - Enhanced Hurricane SPY Tracker with Predictions
+// Market Meteorology API
+app.route('/api/meteorology', meteorologyApi)
+
 app.get('/', (c) => {
   return c.render(
     <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
