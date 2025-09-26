@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Use the enhanced endpoint
 API_URL = "http://localhost:3000/api/meteorology/predict/enhanced"
-PREDICTIONS_DIR = Path("predictions_enhanced")
+PREDICTIONS_DIR = Path("predictions_yahoo")
 
 # Create predictions directory
 PREDICTIONS_DIR.mkdir(exist_ok=True)

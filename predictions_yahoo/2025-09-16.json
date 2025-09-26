@@ -1,0 +1,238 @@
+{
+  "success": true,
+  "timestamp": "2025-09-26T19:33:03.130Z",
+  "currentPrice": 660,
+  "dataSource": "Integrated Hurricane System v2",
+  "regime": {
+    "state": "RANGING | HIGH_VOL",
+    "current": "RANGING | HIGH_VOL"
+  },
+  "confidence": {
+    "overall": 0,
+    "1m": 0,
+    "5m": 0,
+    "15m": 0,
+    "1h": 0,
+    "4h": 0,
+    "1d": 0
+  },
+  "predictions": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 658.6550714285714,
+      "stop_loss": 660.6724642857142,
+      "stopLoss": 660.6724642857142,
+      "cone_upper": 671.8281728571428,
+      "cone_lower": 647.4590149999999,
+      "upperBound": 671.8281728571428,
+      "lowerBound": 647.4590149999999,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.000000000000169,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 657.3101428571429,
+      "stop_loss": 661.3449285714286,
+      "stopLoss": 661.3449285714286,
+      "cone_upper": 670.4563457142857,
+      "cone_lower": 648.11803,
+      "upperBound": 670.4563457142857,
+      "lowerBound": 648.11803,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 655.9652142857143,
+      "stop_loss": 662.0173928571428,
+      "stopLoss": 662.0173928571428,
+      "cone_upper": 669.0845185714286,
+      "cone_lower": 648.7770449999999,
+      "upperBound": 669.0845185714286,
+      "lowerBound": 648.7770449999999,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.0000000000000564,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "NEUTRAL",
+      "target": 653.2753571428572,
+      "stop_loss": 663.3623214285714,
+      "stopLoss": 663.3623214285714,
+      "cone_upper": 666.3408642857144,
+      "cone_lower": 650.095075,
+      "upperBound": 666.3408642857144,
+      "lowerBound": 650.095075,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.0000000000000338,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 646.5507142857143,
+      "stop_loss": 666.7246428571428,
+      "stopLoss": 666.7246428571428,
+      "cone_upper": 659.4817285714287,
+      "cone_lower": 653.39015,
+      "upperBound": 659.4817285714287,
+      "lowerBound": 653.39015,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 639.8260714285715,
+      "stop_loss": 670.0869642857143,
+      "stopLoss": 670.0869642857143,
+      "cone_upper": 652.6225928571429,
+      "cone_lower": 656.6852250000001,
+      "upperBound": 652.6225928571429,
+      "lowerBound": 656.6852250000001,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 1.9999999999999887,
+      "kellySize": 0
+    }
+  },
+  "forecasts": {
+    "1m": {
+      "direction": "NEUTRAL",
+      "target": 658.6550714285714,
+      "stop_loss": 660.6724642857142,
+      "stopLoss": 660.6724642857142,
+      "cone_upper": 671.8281728571428,
+      "cone_lower": 647.4590149999999,
+      "upperBound": 671.8281728571428,
+      "lowerBound": 647.4590149999999,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.000000000000169,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "NEUTRAL",
+      "target": 657.3101428571429,
+      "stop_loss": 661.3449285714286,
+      "stopLoss": 661.3449285714286,
+      "cone_upper": 670.4563457142857,
+      "cone_lower": 648.11803,
+      "upperBound": 670.4563457142857,
+      "lowerBound": 648.11803,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "NEUTRAL",
+      "target": 655.9652142857143,
+      "stop_loss": 662.0173928571428,
+      "stopLoss": 662.0173928571428,
+      "cone_upper": 669.0845185714286,
+      "cone_lower": 648.7770449999999,
+      "upperBound": 669.0845185714286,
+      "lowerBound": 648.7770449999999,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.0000000000000564,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "NEUTRAL",
+      "target": 653.2753571428572,
+      "stop_loss": 663.3623214285714,
+      "stopLoss": 663.3623214285714,
+      "cone_upper": 666.3408642857144,
+      "cone_lower": 650.095075,
+      "upperBound": 666.3408642857144,
+      "lowerBound": 650.095075,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2.0000000000000338,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "NEUTRAL",
+      "target": 646.5507142857143,
+      "stop_loss": 666.7246428571428,
+      "stopLoss": 666.7246428571428,
+      "cone_upper": 659.4817285714287,
+      "cone_lower": 653.39015,
+      "upperBound": 659.4817285714287,
+      "lowerBound": 653.39015,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "NEUTRAL",
+      "target": 639.8260714285715,
+      "stop_loss": 670.0869642857143,
+      "stopLoss": 670.0869642857143,
+      "cone_upper": 652.6225928571429,
+      "cone_lower": 656.6852250000001,
+      "upperBound": 652.6225928571429,
+      "lowerBound": 656.6852250000001,
+      "confidence": 0,
+      "reasons": [],
+      "riskReward": 1.9999999999999887,
+      "kellySize": 0
+    }
+  },
+  "kellySizing": 0,
+  "kelly_size": 0,
+  "criticalLevels": {
+    "support": [
+      634.92,
+      643.96306,
+      634.0421883665997
+    ],
+    "resistance": [
+      646.5,
+      650.76694,
+      659.7578116334
+    ],
+    "vwap": 647.0012190885323
+  },
+  "warnings": [],
+  "strongestSignal": {
+    "timeframe": "1m",
+    "prediction": {
+      "direction": "NEUTRAL",
+      "confidence": 0,
+      "targetPrice": 658.6550714285714,
+      "stopLoss": 660.6724642857142,
+      "reasons": [],
+      "timeframe": "1m",
+      "expectedMove": 0.20377705627705622,
+      "riskReward": 2.000000000000169,
+      "features": {
+        "rsi14": 38.74425507504921,
+        "macd": 0,
+        "macd_signal": 0,
+        "macd_crossover": "approaching_bearish",
+        "adx14": null,
+        "bb_percentB": 0.36000728185158853,
+        "volume_ratio": 0.6539285444445795,
+        "vwap_distance": 0.02009081363058307,
+        "momentum_score": 20,
+        "trend_regime": "up",
+        "volatility_regime": "high",
+        "gex": -761710716.8099104,
+        "dix": 0.5933157536892684,
+        "put_call_ratio": 0.8393090597838668
+      },
+      "timestamp": 1758915183130,
+      "kellySize": 0
+    }
+  }
+}

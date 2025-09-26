@@ -1,0 +1,292 @@
+{
+  "success": true,
+  "timestamp": "2025-09-26T19:33:06.391Z",
+  "currentPrice": 567.9911225809776,
+  "dataSource": "Integrated Hurricane System v2",
+  "regime": {
+    "state": "RANGING",
+    "current": "RANGING"
+  },
+  "confidence": {
+    "overall": 0.4985795454545455,
+    "1m": 0.49857954545454547,
+    "5m": 0.49857954545454547,
+    "15m": 0.49857954545454547,
+    "1h": 0.49857954545454547,
+    "4h": 0.49857954545454547,
+    "1d": 0.49857954545454547
+  },
+  "predictions": {
+    "1m": {
+      "direction": "BUY",
+      "target": 568.014012508433,
+      "stop_loss": 567.9796776172499,
+      "stopLoss": 567.9796776172499,
+      "cone_upper": 579.3742927586017,
+      "cone_lower": 556.6200840649049,
+      "upperBound": 579.3742927586017,
+      "lowerBound": 556.6200840649049,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999900666,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "BUY",
+      "target": 568.0369024358884,
+      "stop_loss": 567.9682326535223,
+      "stopLoss": 567.9682326535223,
+      "cone_upper": 579.3976404846061,
+      "cone_lower": 556.6088680004518,
+      "upperBound": 579.3976404846061,
+      "lowerBound": 556.6088680004518,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "BUY",
+      "target": 568.0597923633437,
+      "stop_loss": 567.9567876897945,
+      "stopLoss": 567.9567876897945,
+      "cone_upper": 579.4209882106106,
+      "cone_lower": 556.5976519359986,
+      "upperBound": 579.4209882106106,
+      "lowerBound": 556.5976519359986,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999966889,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "BUY",
+      "target": 568.1055722182543,
+      "stop_loss": 567.9338977623393,
+      "stopLoss": 567.9338977623393,
+      "cone_upper": 579.4676836626194,
+      "cone_lower": 556.5752198070925,
+      "upperBound": 579.4676836626194,
+      "lowerBound": 556.5752198070925,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "BUY",
+      "target": 568.2200218555312,
+      "stop_loss": 567.8766729437008,
+      "stopLoss": 567.8766729437008,
+      "cone_upper": 579.5844222926418,
+      "cone_lower": 556.5191394848267,
+      "upperBound": 579.5844222926418,
+      "lowerBound": 556.5191394848267,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999990066,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "BUY",
+      "target": 568.3344714928079,
+      "stop_loss": 567.8194481250624,
+      "stopLoss": 567.8194481250624,
+      "cone_upper": 579.701160922664,
+      "cone_lower": 556.4630591625612,
+      "upperBound": 579.701160922664,
+      "lowerBound": 556.4630591625612,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999993379,
+      "kellySize": 0
+    }
+  },
+  "forecasts": {
+    "1m": {
+      "direction": "BUY",
+      "target": 568.014012508433,
+      "stop_loss": 567.9796776172499,
+      "stopLoss": 567.9796776172499,
+      "cone_upper": 579.3742927586017,
+      "cone_lower": 556.6200840649049,
+      "upperBound": 579.3742927586017,
+      "lowerBound": 556.6200840649049,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999900666,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "BUY",
+      "target": 568.0369024358884,
+      "stop_loss": 567.9682326535223,
+      "stopLoss": 567.9682326535223,
+      "cone_upper": 579.3976404846061,
+      "cone_lower": 556.6088680004518,
+      "upperBound": 579.3976404846061,
+      "lowerBound": 556.6088680004518,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "BUY",
+      "target": 568.0597923633437,
+      "stop_loss": 567.9567876897945,
+      "stopLoss": 567.9567876897945,
+      "cone_upper": 579.4209882106106,
+      "cone_lower": 556.5976519359986,
+      "upperBound": 579.4209882106106,
+      "lowerBound": 556.5976519359986,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999966889,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "BUY",
+      "target": 568.1055722182543,
+      "stop_loss": 567.9338977623393,
+      "stopLoss": 567.9338977623393,
+      "cone_upper": 579.4676836626194,
+      "cone_lower": 556.5752198070925,
+      "upperBound": 579.4676836626194,
+      "lowerBound": 556.5752198070925,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "BUY",
+      "target": 568.2200218555312,
+      "stop_loss": 567.8766729437008,
+      "stopLoss": 567.8766729437008,
+      "cone_upper": 579.5844222926418,
+      "cone_lower": 556.5191394848267,
+      "upperBound": 579.5844222926418,
+      "lowerBound": 556.5191394848267,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999990066,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "BUY",
+      "target": 568.3344714928079,
+      "stop_loss": 567.8194481250624,
+      "stopLoss": 567.8194481250624,
+      "cone_upper": 579.701160922664,
+      "cone_lower": 556.4630591625612,
+      "upperBound": 579.701160922664,
+      "lowerBound": 556.4630591625612,
+      "confidence": 0.49857954545454547,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "riskReward": 1.9999999999993379,
+      "kellySize": 0
+    }
+  },
+  "kellySizing": 0,
+  "kelly_size": 0,
+  "criticalLevels": {
+    "support": [
+      661.5700073242188,
+      659.5951811523438,
+      661.3702316314161
+    ],
+    "resistance": [
+      661.75,
+      660.6548188476562,
+      661.8866531342089
+    ],
+    "vwap": 660.3856157507564
+  },
+  "warnings": [
+    "\u26a0\ufe0f Low volume - signals may be less reliable"
+  ],
+  "strongestSignal": {
+    "timeframe": "1m",
+    "prediction": {
+      "direction": "BUY",
+      "confidence": 0.49857954545454547,
+      "targetPrice": 568.014012508433,
+      "stopLoss": 567.9796776172499,
+      "reasons": [
+        "MACD bullish crossover",
+        "High put/call ratio - contrarian bullish",
+        "High DIX - dark pool buying"
+      ],
+      "timeframe": "1m",
+      "expectedMove": 0.0040299797911179085,
+      "riskReward": 1.9999999999900666,
+      "features": {
+        "rsi14": 41.42493895423392,
+        "macd": -0.053246420203777234,
+        "macd_signal": -0.18215554135879689,
+        "macd_crossover": "bullish",
+        "adx14": null,
+        "bb_percentB": 0.2512838212237371,
+        "volume_ratio": 0,
+        "vwap_distance": -0.13990991167295572,
+        "momentum_score": 40,
+        "trend_regime": "down",
+        "volatility_regime": "low",
+        "gex": 312257793.0404546,
+        "dix": 0.4729161663521465,
+        "put_call_ratio": 1.2319679566647894
+      },
+      "timestamp": 1758915186391,
+      "kellySize": 0
+    }
+  }
+}

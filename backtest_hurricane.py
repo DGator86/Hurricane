@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Configuration
 API_BASE_URL = "http://localhost:3000"  # Adjust if deployed
-PREDICTIONS_DIR = Path("predictions")
+PREDICTIONS_DIR = Path("predictions_yahoo")  # Using Yahoo Finance enhanced predictions
 SPY_DATA_FILE = Path("spy_data.csv")
 OUTPUT_DIR = Path("backtest_results")
 

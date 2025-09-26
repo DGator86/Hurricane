@@ -170,11 +170,15 @@ export class EnhancedPredictionModel {
     
     // Determine direction and confidence
     const direction = this.getDirection(adjustedSignal)
-    const baseConfidence = Math.min(0.95, Math.abs(adjustedSignal) / 3)
+    const baseConfidence = Math.min(0.95, Math.abs(adjustedSignal) / 2)  // More aggressive confidence (was /3)
     
     // Boost confidence based on signal agreement
     const signalAgreement = this.calculateSignalAgreement(signals)
-    const confidence = Math.min(0.95, baseConfidence * (1 + signalAgreement * 0.3))
+    const confidence = Math.min(0.95, baseConfidence * (1 + signalAgreement * 0.5))  // Bigger boost (was 0.3)
+    
+    // Additional confidence boost for strong signals with multiple confirmations
+    const strongSignalBoost = signals.filter(s => Math.abs(s.signal) > 1.5).length > 3 ? 0.1 : 0
+    const finalConfidence = Math.min(0.95, confidence + strongSignalBoost)
     
     // Calculate targets based on ATR and timeframe
     const atrMultiplier = this.getATRMultiplier(timeframe)
@@ -195,7 +199,7 @@ export class EnhancedPredictionModel {
     
     return {
       direction,
-      confidence,
+      confidence: finalConfidence,
       targetPrice,
       stopLoss,
       reasons: topReasons,
@@ -247,11 +251,11 @@ export class EnhancedPredictionModel {
       multiplier *= 0.8  // Reduce all signals in choppy market
     }
     
-    // Volatility adjustments
+    // Volatility adjustments (less conservative for better accuracy)
     if (features.volatility_regime === 'extreme') {
-      multiplier *= 0.7  // Reduce position in extreme volatility
+      multiplier *= 0.9  // Only slightly reduce in extreme volatility (was 0.7)
     } else if (features.volatility_regime === 'low') {
-      multiplier *= 1.2  // Increase confidence in low volatility
+      multiplier *= 1.3  // Increase confidence in low volatility (was 1.2)
     }
     
     // Volume regime

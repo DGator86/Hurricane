@@ -1,0 +1,266 @@
+{
+  "success": true,
+  "timestamp": "2025-09-26T19:33:03.479Z",
+  "currentPrice": 580.9073028142827,
+  "dataSource": "Integrated Hurricane System v2",
+  "regime": {
+    "state": "RANGING",
+    "current": "RANGING"
+  },
+  "confidence": {
+    "overall": 0.29250000000000004,
+    "1m": 0.29250000000000004,
+    "5m": 0.29250000000000004,
+    "15m": 0.29250000000000004,
+    "1h": 0.29250000000000004,
+    "4h": 0.29250000000000004,
+    "1d": 0.29250000000000004
+  },
+  "predictions": {
+    "1m": {
+      "direction": "BUY",
+      "target": 580.9301927417381,
+      "stop_loss": 580.895857850555,
+      "stopLoss": 580.895857850555,
+      "cone_upper": 592.5487965965729,
+      "cone_lower": 569.2779406935439,
+      "upperBound": 592.5487965965729,
+      "lowerBound": 569.2779406935439,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 1.9999999999900666,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "BUY",
+      "target": 580.9530826691935,
+      "stop_loss": 580.8844128868274,
+      "stopLoss": 580.8844128868274,
+      "cone_upper": 592.5721443225773,
+      "cone_lower": 569.2667246290908,
+      "upperBound": 592.5721443225773,
+      "lowerBound": 569.2667246290908,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "BUY",
+      "target": 580.9759725966487,
+      "stop_loss": 580.8729679230997,
+      "stopLoss": 580.8729679230997,
+      "cone_upper": 592.5954920485817,
+      "cone_lower": 569.2555085646377,
+      "upperBound": 592.5954920485817,
+      "lowerBound": 569.2555085646377,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "BUY",
+      "target": 581.0217524515596,
+      "stop_loss": 580.8500779956444,
+      "stopLoss": 580.8500779956444,
+      "cone_upper": 592.6421875005908,
+      "cone_lower": 569.2330764357315,
+      "upperBound": 592.6421875005908,
+      "lowerBound": 569.2330764357315,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2.000000000001987,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "BUY",
+      "target": 581.1362020888364,
+      "stop_loss": 580.7928531770059,
+      "stopLoss": 580.7928531770059,
+      "cone_upper": 592.7589261306132,
+      "cone_lower": 569.1769961134657,
+      "upperBound": 592.7589261306132,
+      "lowerBound": 569.1769961134657,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "BUY",
+      "target": 581.250651726113,
+      "stop_loss": 580.7356283583675,
+      "stopLoss": 580.7356283583675,
+      "cone_upper": 592.8756647606352,
+      "cone_lower": 569.1209157912002,
+      "upperBound": 592.8756647606352,
+      "lowerBound": 569.1209157912002,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 1.9999999999993379,
+      "kellySize": 0
+    }
+  },
+  "forecasts": {
+    "1m": {
+      "direction": "BUY",
+      "target": 580.9301927417381,
+      "stop_loss": 580.895857850555,
+      "stopLoss": 580.895857850555,
+      "cone_upper": 592.5487965965729,
+      "cone_lower": 569.2779406935439,
+      "upperBound": 592.5487965965729,
+      "lowerBound": 569.2779406935439,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 1.9999999999900666,
+      "kellySize": 0
+    },
+    "5m": {
+      "direction": "BUY",
+      "target": 580.9530826691935,
+      "stop_loss": 580.8844128868274,
+      "stopLoss": 580.8844128868274,
+      "cone_upper": 592.5721443225773,
+      "cone_lower": 569.2667246290908,
+      "upperBound": 592.5721443225773,
+      "lowerBound": 569.2667246290908,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "15m": {
+      "direction": "BUY",
+      "target": 580.9759725966487,
+      "stop_loss": 580.8729679230997,
+      "stopLoss": 580.8729679230997,
+      "cone_upper": 592.5954920485817,
+      "cone_lower": 569.2555085646377,
+      "upperBound": 592.5954920485817,
+      "lowerBound": 569.2555085646377,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1h": {
+      "direction": "BUY",
+      "target": 581.0217524515596,
+      "stop_loss": 580.8500779956444,
+      "stopLoss": 580.8500779956444,
+      "cone_upper": 592.6421875005908,
+      "cone_lower": 569.2330764357315,
+      "upperBound": 592.6421875005908,
+      "lowerBound": 569.2330764357315,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2.000000000001987,
+      "kellySize": 0
+    },
+    "4h": {
+      "direction": "BUY",
+      "target": 581.1362020888364,
+      "stop_loss": 580.7928531770059,
+      "stopLoss": 580.7928531770059,
+      "cone_upper": 592.7589261306132,
+      "cone_lower": 569.1769961134657,
+      "upperBound": 592.7589261306132,
+      "lowerBound": 569.1769961134657,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 2,
+      "kellySize": 0
+    },
+    "1d": {
+      "direction": "BUY",
+      "target": 581.250651726113,
+      "stop_loss": 580.7356283583675,
+      "stopLoss": 580.7356283583675,
+      "cone_upper": 592.8756647606352,
+      "cone_lower": 569.1209157912002,
+      "upperBound": 592.8756647606352,
+      "lowerBound": 569.1209157912002,
+      "confidence": 0.29250000000000004,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "riskReward": 1.9999999999993379,
+      "kellySize": 0
+    }
+  },
+  "kellySizing": 0,
+  "kelly_size": 0,
+  "criticalLevels": {
+    "support": [
+      661.5700073242188,
+      659.5951811523438,
+      661.3702316314161
+    ],
+    "resistance": [
+      661.75,
+      660.6548188476562,
+      661.8866531342089
+    ],
+    "vwap": 660.3856157507564
+  },
+  "warnings": [
+    "\u26a0\ufe0f Low volume - signals may be less reliable"
+  ],
+  "strongestSignal": {
+    "timeframe": "1m",
+    "prediction": {
+      "direction": "BUY",
+      "confidence": 0.29250000000000004,
+      "targetPrice": 580.9301927417381,
+      "stopLoss": 580.895857850555,
+      "reasons": [
+        "MACD bullish crossover"
+      ],
+      "timeframe": "1m",
+      "expectedMove": 0.0039403752275903306,
+      "riskReward": 1.9999999999900666,
+      "features": {
+        "rsi14": 41.42493895423392,
+        "macd": -0.053246420203777234,
+        "macd_signal": -0.18215554135879689,
+        "macd_crossover": "bullish",
+        "adx14": null,
+        "bb_percentB": 0.2512838212237371,
+        "volume_ratio": 0,
+        "vwap_distance": -0.12035136901962822,
+        "momentum_score": 40,
+        "trend_regime": "down",
+        "volatility_regime": "low",
+        "gex": 231188625.2930808,
+        "dix": 0.44175355052153253,
+        "put_call_ratio": 1.0836312802371608
+      },
+      "timestamp": 1758915183479,
+      "kellySize": 0
+    }
+  }
+}

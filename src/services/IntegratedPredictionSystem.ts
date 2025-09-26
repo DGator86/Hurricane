@@ -8,6 +8,7 @@ import { EnhancedPredictionModel, PredictionSignal } from './EnhancedPredictionM
 import { TechnicalIndicators, OHLCV } from './TechnicalIndicators'
 import { PolygonAPI } from './PolygonAPI'
 import { EnhancedMarketDataService } from '../market-data-enhanced'
+import { YahooFinanceAPI } from './YahooFinanceAPI'
 
 export interface TimeframePrediction extends PredictionSignal {
   features: Partial<HurricaneFeatures>
@@ -42,12 +43,14 @@ export class IntegratedPredictionSystem {
   private predictionModel: EnhancedPredictionModel
   private marketDataService: EnhancedMarketDataService
   private polygonApi: PolygonAPI
+  private yahooFinance: YahooFinanceAPI
   
   constructor(polygonKey: string, twelveDataKey?: string) {
     this.featureExtractor = new HurricaneFeatureExtractor(polygonKey)
     this.predictionModel = new EnhancedPredictionModel()
     this.marketDataService = new EnhancedMarketDataService(polygonKey, twelveDataKey)
     this.polygonApi = new PolygonAPI(polygonKey)
+    this.yahooFinance = new YahooFinanceAPI()
   }
   
   /**
@@ -164,21 +167,56 @@ export class IntegratedPredictionSystem {
           'day',
           startDate.toISOString().split('T')[0],
           endDate.toISOString().split('T')[0]
-        )
+        ).catch(() => null)
         
-        const candles1d = this.convertToOHLCV(dailyData.results)
-        
-        return {
-          candles1d,
-          candles4h: candles1d,  // Use daily as proxy
-          candles1h: candles1d,
-          candles15m: candles1d,
-          candles5m: candles1d,
-          candles1m: candles1d
+        if (dailyData) {
+          const candles1d = this.convertToOHLCV(dailyData.results)
+          
+          return {
+            candles1d,
+            candles4h: candles1d,  // Use daily as proxy for historical
+            candles1h: candles1d,
+            candles15m: candles1d,
+            candles5m: candles1d,
+            candles1m: candles1d
+          }
         }
       }
       
-      // For live data, try to fetch each timeframe
+      // For live data, try Yahoo Finance FIRST for intraday data
+      console.log('🎯 Attempting to fetch intraday data from Yahoo Finance...')
+      
+      try {
+        const yahooData = await this.yahooFinance.getAllTimeframeData('SPY')
+        
+        if (yahooData.candles1m && yahooData.candles1m.length > 0) {
+          console.log('✅ Successfully fetched Yahoo Finance intraday data!')
+          console.log(`  • 1m candles: ${yahooData.candles1m.length}`)
+          console.log(`  • 5m candles: ${yahooData.candles5m.length}`)
+          console.log(`  • 15m candles: ${yahooData.candles15m.length}`)
+          console.log(`  • 1h candles: ${yahooData.candles1h.length}`)
+          console.log(`  • 1d candles: ${yahooData.candles1d.length}`)
+          
+          // Also fetch options data for better predictions
+          const optionsChain = await this.yahooFinance.getOptionsChain('SPY')
+          if (optionsChain) {
+            console.log(`  • Options: ${optionsChain.calls.length} calls, ${optionsChain.puts.length} puts`)
+          }
+          
+          return {
+            candles1m: yahooData.candles1m,
+            candles5m: yahooData.candles5m,
+            candles15m: yahooData.candles15m,
+            candles1h: yahooData.candles1h,
+            candles4h: yahooData.candles1h,  // Use 1h as proxy for 4h
+            candles1d: yahooData.candles1d
+          }
+        }
+      } catch (yahooError) {
+        console.warn('⚠️ Yahoo Finance failed, falling back to Polygon...', yahooError)
+      }
+      
+      // Fallback to Polygon if Yahoo fails
       const now = new Date()
       const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
