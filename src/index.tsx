@@ -10,6 +10,7 @@ import { FinnhubDataService } from './finnhub-data'
 import { BacktestEngine } from './backtest'
 import { PredictionAccuracyAnalyzer } from './prediction-accuracy'
 import { GEXDataService } from './gex-data'
+import { IntegratedPredictionSystem } from './services/IntegratedPredictionSystem'
 
 type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
@@ -697,6 +698,29 @@ app.get('/api/market/internals', async (c) => {
   } catch (error) {
     console.error('Market internals error:', error)
     return c.json({ error: 'Failed to fetch market internals', details: error.message }, 500)
+  }
+})
+
+// NEW ENDPOINT: Hurricane Prediction System with Fixed ATR
+app.get('/api/hurricane/prediction', async (c) => {
+  try {
+    // Initialize the Hurricane Prediction System
+    const system = new IntegratedPredictionSystem(
+      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
+    )
+    
+    // Generate comprehensive prediction
+    const prediction = await system.generatePrediction()
+    
+    // Return the enhanced prediction
+    return c.json(prediction)
+  } catch (error) {
+    console.error('Error generating hurricane prediction:', error)
+    return c.json({ 
+      error: 'Failed to generate hurricane prediction', 
+      details: error.message 
+    }, 500)
   }
 })
 

@@ -207,7 +207,18 @@ export class HurricaneFeatureExtractor {
     const bb = TechnicalIndicators.calculateBollingerBands(prices, 20, 2)
     const adx = TechnicalIndicators.calculateADX(primaryCandles, 14)
     const stoch = TechnicalIndicators.calculateStochastic(primaryCandles, 14)
-    const atr = TechnicalIndicators.calculateATR(primaryCandles, 14)
+    
+    // Calculate ATR for each timeframe
+    const atr1m = candles1m ? TechnicalIndicators.calculateATR(candles1m, 14) : 0
+    const atr5m = candles5m ? TechnicalIndicators.calculateATR(candles5m, 14) : 0
+    const atr15m = candles15m ? TechnicalIndicators.calculateATR(candles15m, 14) : 0
+    const atr1h = candles1h ? TechnicalIndicators.calculateATR(candles1h, 14) : 0
+    const atr4h = candles4h ? TechnicalIndicators.calculateATR(candles4h, 14) : 0
+    const atr1d = candles1d ? TechnicalIndicators.calculateATR(candles1d, 14) : 0
+    
+    // Use hourly ATR as primary, fallback to others
+    const atr = atr1h || atr15m || atr5m || atr1m || atr1d || 0
+    
     const vwap = TechnicalIndicators.calculateVWAP(primaryCandles)
     const obv = TechnicalIndicators.calculateOBV(primaryCandles)
     
@@ -370,9 +381,15 @@ export class HurricaneFeatureExtractor {
       stoch_oversold: stoch.k < 20,
       stoch_overbought: stoch.k > 80,
       
-      // Volatility
+      // Volatility - Include timeframe-specific ATRs
       atr14: atr,
       atr_percent: (atr / currentPrice) * 100,
+      atr14_1m: (atr1m / currentPrice) * 100,
+      atr14_5m: (atr5m / currentPrice) * 100,
+      atr14_15m: (atr15m / currentPrice) * 100,
+      atr14_1h: (atr1h / currentPrice) * 100,
+      atr14_4h: (atr4h / currentPrice) * 100,
+      atr14_1d: (atr1d / currentPrice) * 100,
       bb_upper: bb.upper,
       bb_middle: bb.middle,
       bb_lower: bb.lower,

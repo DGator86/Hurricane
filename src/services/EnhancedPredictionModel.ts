@@ -26,15 +26,23 @@ export class EnhancedPredictionModel {
     
     // === MOMENTUM SIGNALS (Weight: 30%) ===
     
-    // RSI Signals
+    // RSI Signals with timeframe adjustment
+    const rsiTimeframeMultiplier = this.getRSITimeframeMultiplier(timeframe)
+    
     if (features.rsi_oversold && features.rsi14 < 25) {
-      signals.push({ signal: 2, weight: 3, reason: 'Extreme oversold RSI < 25' })
+      signals.push({ signal: 2 * rsiTimeframeMultiplier, weight: 3, reason: 'Extreme oversold RSI < 25' })
     } else if (features.rsi_oversold) {
-      signals.push({ signal: 1, weight: 2, reason: 'RSI oversold < 30' })
+      signals.push({ signal: 1 * rsiTimeframeMultiplier, weight: 2, reason: 'RSI oversold < 30' })
     } else if (features.rsi_overbought && features.rsi14 > 75) {
-      signals.push({ signal: -2, weight: 3, reason: 'Extreme overbought RSI > 75' })
+      signals.push({ signal: -2 * rsiTimeframeMultiplier, weight: 3, reason: 'Extreme overbought RSI > 75' })
     } else if (features.rsi_overbought) {
-      signals.push({ signal: -1, weight: 2, reason: 'RSI overbought > 70' })
+      signals.push({ signal: -1 * rsiTimeframeMultiplier, weight: 2, reason: 'RSI overbought > 70' })
+    } else if (features.rsi14 > 50 && features.rsi14 < 60) {
+      // Neutral zone with slight bullish bias
+      signals.push({ signal: 0.3, weight: 1, reason: 'RSI neutral-bullish (50-60)' })
+    } else if (features.rsi14 > 40 && features.rsi14 < 50) {
+      // Neutral zone with slight bearish bias
+      signals.push({ signal: -0.3, weight: 1, reason: 'RSI neutral-bearish (40-50)' })
     }
     
     // MACD Signals
@@ -151,11 +159,43 @@ export class EnhancedPredictionModel {
     
     // === TIME-BASED FACTORS (Weight: 5%) ===
     
-    // Intraday patterns
-    if (features.hour_of_day === 9 && features.priceChange1m > 0.002) {
-      signals.push({ signal: 1, weight: 1, reason: 'Opening momentum' })
-    } else if (features.hour_of_day === 15 && features.day_of_week === 5) {
-      signals.push({ signal: 0, weight: 2, reason: 'Friday close - expect reversal' })
+    // Intraday patterns with more nuance
+    const hour = features.hour_of_day
+    const dayOfWeek = features.day_of_week
+    
+    // Opening hour patterns (9:30-10:30 AM EST)
+    if (hour === 9 || hour === 10) {
+      if (features.priceChange1m > 0.002) {
+        signals.push({ signal: 1.2, weight: 1.5, reason: 'Strong opening momentum' })
+      } else if (features.priceChange1m < -0.002) {
+        signals.push({ signal: -1.2, weight: 1.5, reason: 'Weak opening - potential fade' })
+      } else {
+        signals.push({ signal: 0, weight: 0.5, reason: 'Choppy open - wait for direction' })
+      }
+    }
+    
+    // Lunch hour doldrums (11:30 AM - 1:00 PM EST)
+    if (hour === 11 || hour === 12) {
+      signals.push({ signal: 0, weight: 0.5, reason: 'Lunch hour - reduced activity' })
+    }
+    
+    // Power hour (3:00-4:00 PM EST)
+    if (hour === 15) {
+      if (dayOfWeek === 5) {
+        // Friday close
+        signals.push({ signal: features.priceChange1h > 0 ? -0.5 : 0.5, weight: 2, reason: 'Friday close mean reversion' })
+      } else if (dayOfWeek === 1) {
+        // Monday close
+        signals.push({ signal: features.priceChange1h > 0 ? 0.8 : -0.8, weight: 1.5, reason: 'Monday close continuation' })
+      } else {
+        // Regular power hour
+        signals.push({ signal: features.volume_ratio > 1.2 ? 1 : -0.5, weight: 1, reason: 'Power hour momentum' })
+      }
+    }
+    
+    // After-hours positioning (4:00-5:00 PM EST)
+    if (hour === 16) {
+      signals.push({ signal: 0, weight: 1, reason: 'After-hours - reduced liquidity' })
     }
     
     // === REGIME-BASED ADJUSTMENTS ===
@@ -181,14 +221,32 @@ export class EnhancedPredictionModel {
     const finalConfidence = Math.min(0.95, confidence + strongSignalBoost)
     
     // Calculate targets based on ATR and timeframe
+    // FIXED: Use timeframe-specific ATR when available
     const atrMultiplier = this.getATRMultiplier(timeframe)
-    const expectedMove = features.atr_percent * atrMultiplier
     
-    const targetPrice = features.price * (1 + (adjustedSignal > 0 ? expectedMove : -expectedMove) / 100)
-    const stopLoss = features.price * (1 + (adjustedSignal > 0 ? -expectedMove * 0.5 : expectedMove * 0.5) / 100)
+    // Get timeframe-specific ATR or fallback to general ATR
+    const timeframeATR = this.getTimeframeATR(features, timeframe)
     
-    // Risk/Reward
-    const riskReward = Math.abs((targetPrice - features.price) / (features.price - stopLoss))
+    // Ensure minimum ATR percentage (SPY typically 0.5-2% daily ATR)
+    const minAtrPercent = this.getMinimumATRPercent(timeframe)
+    const effectiveAtrPercent = Math.max(timeframeATR || features.atr_percent, minAtrPercent)
+    
+    // Calculate expected move as ATR * multiplier
+    const expectedMove = effectiveAtrPercent * atrMultiplier
+    
+    // Calculate target and stop with proper risk management
+    // Target: aim for the full expected move
+    // Stop: use 1 ATR for stop loss (standard risk management)
+    const targetMove = expectedMove
+    const stopMove = effectiveAtrPercent  // 1 ATR stop
+    
+    const targetPrice = features.price * (1 + (adjustedSignal > 0 ? targetMove : -targetMove) / 100)
+    const stopLoss = features.price * (1 + (adjustedSignal > 0 ? -stopMove : stopMove) / 100)
+    
+    // Risk/Reward calculation
+    const reward = Math.abs(targetPrice - features.price)
+    const risk = Math.abs(features.price - stopLoss)
+    const riskReward = risk > 0 ? reward / risk : 2.0  // Default to 2:1 if calculation fails
     
     // Get top reasons
     const topReasons = signals
@@ -237,45 +295,77 @@ export class EnhancedPredictionModel {
   }
   
   /**
-   * Get regime-based signal multiplier
+   * Get regime-based signal multiplier with directional bias
    */
   private getRegimeMultiplier(features: HurricaneFeatures): number {
     let multiplier = 1
     
-    // Trend regime adjustments
+    // Trend regime adjustments with directional consideration
     if (features.trend_regime === 'strong_up') {
-      multiplier *= 1.3  // Boost bullish signals
+      // In strong uptrend, boost bullish signals more than bearish
+      if (features.price > features.vwap) {
+        multiplier *= 1.4  // Strong bullish confirmation
+      } else {
+        multiplier *= 0.9  // Pullback in uptrend - be cautious
+      }
     } else if (features.trend_regime === 'strong_down') {
-      multiplier *= 1.3  // Boost bearish signals
+      // In strong downtrend, boost bearish signals more than bullish
+      if (features.price < features.vwap) {
+        multiplier *= 1.4  // Strong bearish confirmation
+      } else {
+        multiplier *= 0.9  // Bounce in downtrend - be cautious
+      }
     } else if (features.trend_regime === 'neutral') {
-      multiplier *= 0.8  // Reduce all signals in choppy market
+      // In neutral market, look for mean reversion
+      if (Math.abs(features.bb_percentB - 0.5) > 0.4) {
+        multiplier *= 1.2  // Near bands - expect reversion
+      } else {
+        multiplier *= 0.7  // Middle of range - no edge
+      }
     }
     
-    // Volatility adjustments (less conservative for better accuracy)
-    if (features.volatility_regime === 'extreme') {
-      multiplier *= 0.9  // Only slightly reduce in extreme volatility (was 0.7)
+    // Volatility adjustments with VIX consideration
+    if (features.volatility_regime === 'extreme' && features.vix > 25) {
+      multiplier *= 0.8  // Reduce position in high VIX
+    } else if (features.volatility_regime === 'extreme' && features.vix < 25) {
+      multiplier *= 0.95  // Slight reduction for volatility expansion
+    } else if (features.volatility_regime === 'low' && features.vix < 15) {
+      multiplier *= 1.3  // Low VIX - trend following works
     } else if (features.volatility_regime === 'low') {
-      multiplier *= 1.3  // Increase confidence in low volatility (was 1.2)
+      multiplier *= 1.1  // Normal low volatility
     }
     
-    // Volume regime
+    // Volume regime with price action
     if (features.volume_regime === 'high') {
-      multiplier *= 1.1  // Higher conviction with high volume
+      // High volume confirms direction
+      if (features.priceChange1h > 0) {
+        multiplier *= 1.15  // Bullish with volume
+      } else {
+        multiplier *= 1.15  // Bearish with volume
+      }
     } else if (features.volume_regime === 'low') {
-      multiplier *= 0.9  // Lower conviction with low volume
+      multiplier *= 0.85  // Low volume = less conviction
+    }
+    
+    // Options flow adjustment
+    if (features.gex < -5e8 && features.put_call_ratio > 1.0) {
+      multiplier *= 1.2  // Negative GEX + high puts = volatile
+    } else if (features.gex > 5e8 && features.put_call_ratio < 0.7) {
+      multiplier *= 0.9  // Positive GEX + high calls = pinned
     }
     
     return multiplier
   }
   
   /**
-   * Convert signal strength to direction
+   * Convert signal strength to direction with better thresholds
    */
   private getDirection(signal: number): 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL' {
-    if (signal > 1.5) return 'STRONG_BUY'
-    if (signal > 0.5) return 'BUY'
-    if (signal < -1.5) return 'STRONG_SELL'
-    if (signal < -0.5) return 'SELL'
+    // Adjusted thresholds for more diverse signals
+    if (signal > 1.8) return 'STRONG_BUY'
+    if (signal > 0.6) return 'BUY'
+    if (signal < -1.8) return 'STRONG_SELL'
+    if (signal < -0.6) return 'SELL'
     return 'NEUTRAL'
   }
   
@@ -294,19 +384,71 @@ export class EnhancedPredictionModel {
   
   /**
    * Get ATR multiplier based on timeframe
+   * FIXED: Increased multipliers significantly for proper R-multiple calculation
    */
   private getATRMultiplier(timeframe: string): number {
+    // These multipliers determine how many ATRs we target for each timeframe
+    // For proper R-multiple, we need at least 1-2 ATR moves
     const multipliers: { [key: string]: number } = {
-      '1m': 0.2,
-      '5m': 0.4,
-      '15m': 0.6,
-      '1h': 1.0,
-      '4h': 2.0,
-      '1d': 3.0
+      '1m': 1.5,    // Target 1.5x ATR for 1-minute trades (was 0.2)
+      '5m': 2.0,    // Target 2x ATR for 5-minute trades (was 0.4)
+      '15m': 2.5,   // Target 2.5x ATR for 15-minute trades (was 0.6)
+      '1h': 3.0,    // Target 3x ATR for 1-hour trades (was 1.0)
+      '4h': 4.0,    // Target 4x ATR for 4-hour trades (was 2.0)
+      '1d': 5.0     // Target 5x ATR for daily trades (was 3.0)
+    }
+    return multipliers[timeframe] || 2.0
+  }
+  
+  /**
+   * Get timeframe-specific ATR from features
+   */
+  private getTimeframeATR(features: any, timeframe: string): number | undefined {
+    const atrMap: { [key: string]: string } = {
+      '1m': 'atr14_1m',
+      '5m': 'atr14_5m',
+      '15m': 'atr14_15m',
+      '1h': 'atr14_1h',
+      '4h': 'atr14_4h',
+      '1d': 'atr14_1d'
+    }
+    
+    const atrKey = atrMap[timeframe]
+    return atrKey ? features[atrKey] : features.atr_percent
+  }
+  
+  /**
+   * Get RSI timeframe multiplier for better signal diversity
+   */
+  private getRSITimeframeMultiplier(timeframe: string): number {
+    // Shorter timeframes should have less impact from RSI extremes
+    const multipliers: { [key: string]: number } = {
+      '1m': 0.5,    // Very short-term, RSI less reliable
+      '5m': 0.7,    // Short-term
+      '15m': 0.9,   // Medium-short
+      '1h': 1.0,    // Standard
+      '4h': 1.2,    // Longer-term, RSI more reliable
+      '1d': 1.5     // Daily RSI very reliable
     }
     return multipliers[timeframe] || 1.0
   }
-  
+
+  /**
+   * Get minimum ATR percentage for each timeframe
+   * These are typical minimum ATR values for SPY
+   */
+  private getMinimumATRPercent(timeframe: string): number {
+    const minimums: { [key: string]: number } = {
+      '1m': 0.05,   // 0.05% minimum for 1-minute
+      '5m': 0.10,   // 0.10% minimum for 5-minute
+      '15m': 0.15,  // 0.15% minimum for 15-minute
+      '1h': 0.25,   // 0.25% minimum for 1-hour
+      '4h': 0.50,   // 0.50% minimum for 4-hour
+      '1d': 0.75    // 0.75% minimum for daily
+    }
+    return minimums[timeframe] || 0.20
+  }
+
   /**
    * Calculate Kelly Criterion position size
    */
