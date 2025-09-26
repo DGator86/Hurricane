@@ -90,11 +90,11 @@ export class EnhancedPredictionModel {
       signals.push({ signal: -2, weight: 3, reason: 'Bearish MA alignment (all MAs stacked)' })
     }
     
-    // Golden/Death Cross
+    // Golden/Death Cross (reduced weight to prevent overwhelming bias)
     if (features.golden_cross) {
-      signals.push({ signal: 1.5, weight: 3, reason: 'Golden cross (50 > 200 SMA)' })
+      signals.push({ signal: 1.0, weight: 2, reason: 'Golden cross (50 > 200 SMA)' })
     } else if (features.death_cross) {
-      signals.push({ signal: -1.5, weight: 3, reason: 'Death cross (50 < 200 SMA)' })
+      signals.push({ signal: -1.0, weight: 2, reason: 'Death cross (50 < 200 SMA)' })
     }
     
     // === VOLUME SIGNALS (Weight: 20%) ===
@@ -206,19 +206,36 @@ export class EnhancedPredictionModel {
     
     const totalWeight = signals.reduce((sum, s) => sum + s.weight, 0) || 1
     const weightedSignal = signals.reduce((sum, s) => sum + s.signal * s.weight, 0) / totalWeight
-    const adjustedSignal = weightedSignal * regimeMultiplier
+    
+    // BIAS CORRECTION: If signal is too extreme, apply dampening
+    // This prevents the model from always being bullish or bearish
+    let biasAdjustedSignal = weightedSignal
+    if (Math.abs(weightedSignal) > 2) {
+      // Dampen extreme signals
+      biasAdjustedSignal = Math.sign(weightedSignal) * (2 + (Math.abs(weightedSignal) - 2) * 0.5)
+    }
+    
+    // Add market context adjustment based on SPY's typical behavior
+    // SPY has a long-term upward bias, so add slight bullish tilt
+    const marketBias = 0.1  // Slight bullish bias for SPY
+    biasAdjustedSignal += marketBias
+    
+    const adjustedSignal = biasAdjustedSignal * regimeMultiplier
     
     // Determine direction and confidence
     const direction = this.getDirection(adjustedSignal)
-    const baseConfidence = Math.min(0.95, Math.abs(adjustedSignal) / 2)  // More aggressive confidence (was /3)
+    
+    // FIXED: More reasonable confidence calculation
+    // Start with base 30% confidence, then adjust based on signal strength
+    const baseConfidence = 0.3 + Math.min(0.5, Math.abs(adjustedSignal) / 3)
     
     // Boost confidence based on signal agreement
     const signalAgreement = this.calculateSignalAgreement(signals)
-    const confidence = Math.min(0.95, baseConfidence * (1 + signalAgreement * 0.5))  // Bigger boost (was 0.3)
+    const confidence = Math.min(0.85, baseConfidence * (1 + signalAgreement * 0.3))
     
     // Additional confidence boost for strong signals with multiple confirmations
-    const strongSignalBoost = signals.filter(s => Math.abs(s.signal) > 1.5).length > 3 ? 0.1 : 0
-    const finalConfidence = Math.min(0.95, confidence + strongSignalBoost)
+    const strongSignalBoost = signals.filter(s => Math.abs(s.signal) > 1.5).length > 2 ? 0.1 : 0
+    const finalConfidence = Math.min(0.85, confidence + strongSignalBoost)
     
     // Calculate targets based on ATR and timeframe
     // FIXED: Use timeframe-specific ATR when available
@@ -361,11 +378,12 @@ export class EnhancedPredictionModel {
    * Convert signal strength to direction with better thresholds
    */
   private getDirection(signal: number): 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL' {
-    // Adjusted thresholds for more diverse signals
-    if (signal > 1.8) return 'STRONG_BUY'
-    if (signal > 0.6) return 'BUY'
-    if (signal < -1.8) return 'STRONG_SELL'
-    if (signal < -0.6) return 'SELL'
+    // FIXED: Much lower thresholds to generate more directional signals
+    // Old thresholds (0.6) were too high, causing everything to be NEUTRAL
+    if (signal > 1.0) return 'STRONG_BUY'
+    if (signal > 0.2) return 'BUY'  // Lowered from 0.6 to 0.2
+    if (signal < -1.0) return 'STRONG_SELL'
+    if (signal < -0.2) return 'SELL'  // Lowered from -0.6 to -0.2
     return 'NEUTRAL'
   }
   

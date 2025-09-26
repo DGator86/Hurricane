@@ -1,0 +1,40 @@
+{
+  "total_predictions": 0,
+  "by_timeframe": {},
+  "direction_accuracy": {
+    "correct": 0,
+    "incorrect": 0
+  },
+  "target_hit_rate": {
+    "hit": 0,
+    "missed": 0,
+    "stopped": 0
+  },
+  "confidence_calibration": {
+    "justified": 0,
+    "unjustified": 0
+  },
+  "fit_scores": [],
+  "daily_results": [
+    {
+      "date": "2024-12-20",
+      "fits": []
+    },
+    {
+      "date": "2024-12-19",
+      "fits": []
+    },
+    {
+      "date": "2024-12-18",
+      "fits": []
+    },
+    {
+      "date": "2024-12-17",
+      "fits": []
+    },
+    {
+      "date": "2024-12-16",
+      "fits": []
+    }
+  ]
+}
