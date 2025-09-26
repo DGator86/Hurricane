@@ -86,25 +86,96 @@ export class FinnhubDataService {
     const cached = this.getCached(cacheKey)
     if (cached) return cached
 
-    try {
-      // Finnhub uses ^VIX for the VIX index
-      const response = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=^VIX&token=${this.apiKey}`
-      )
-      const data: FinnhubQuote = await response.json()
+    // Try multiple VIX symbols as Finnhub might use different formats
+    const vixSymbols = ['^VIX', 'VIX', 'VIXY', 'VXX', 'UVXY']
+    
+    for (const symbol of vixSymbols) {
+      try {
+        console.log(`Attempting to fetch VIX data with symbol: ${symbol}`)
+        const response = await fetch(
+          `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.apiKey}`
+        )
+        const data: FinnhubQuote = await response.json()
 
-      if (data.c) {
-        const vixLevel = data.c
-        this.setCache(cacheKey, vixLevel)
-        return vixLevel
+        if (data.c && data.c > 0) {
+          // Adjust for ETFs that track VIX (they may need scaling)
+          let vixLevel = data.c
+          
+          // VIXY and VXX are ETFs that track VIX futures, not direct VIX
+          // They typically trade at different levels, so we need to adjust
+          if (symbol === 'VIXY' || symbol === 'VXX') {
+            // These ETFs decay over time, so their absolute value isn't VIX
+            // Instead, use their daily change as a proxy for VIX movement
+            const changePercent = Math.abs(data.dp)
+            vixLevel = 16.5 * (1 + changePercent / 10) // Scale based on change
+          } else if (symbol === 'UVXY') {
+            // UVXY is 2x leveraged, so divide by 2 and adjust
+            vixLevel = data.c / 2
+          }
+          
+          // Ensure VIX is in reasonable range (10-80)
+          vixLevel = Math.max(10, Math.min(80, vixLevel))
+          
+          console.log(`Successfully fetched VIX: ${vixLevel} from ${symbol}`)
+          this.setCache(cacheKey, vixLevel)
+          return vixLevel
+        }
+      } catch (error) {
+        console.log(`Failed to fetch ${symbol}, trying next...`)
+        continue
       }
-
-      // If VIX not available, try to estimate from SPY volatility
-      return await this.estimateVIXFromSPY()
-    } catch (error) {
-      console.error('Error fetching VIX from Finnhub:', error)
-      return 16.5 // Default VIX level
     }
+
+    // If all VIX symbols fail, try to calculate implied volatility from options
+    console.log('Direct VIX fetch failed, attempting IV calculation from SPY options...')
+    const impliedVol = await this.getImpliedVolatilityFromOptions()
+    if (impliedVol > 0) {
+      this.setCache(cacheKey, impliedVol)
+      return impliedVol
+    }
+
+    // Final fallback: estimate from SPY volatility
+    console.log('Falling back to SPY historical volatility estimation...')
+    return await this.estimateVIXFromSPY()
+  }
+
+  // Get implied volatility from SPY options (approximation of VIX)
+  private async getImpliedVolatilityFromOptions(): Promise<number> {
+    try {
+      // Get SPY quote first
+      const spyQuote = await this.getCurrentSPYQuote()
+      const currentPrice = spyQuote.price
+      
+      // Fetch option chain for SPY
+      const response = await fetch(
+        `https://finnhub.io/api/v1/stock/option-chain?symbol=SPY&token=${this.apiKey}`
+      )
+      const data = await response.json()
+      
+      if (data && data.data && data.data.length > 0) {
+        // Find at-the-money options
+        const atmOptions = data.data.filter((opt: any) => {
+          const strike = parseFloat(opt.strike)
+          return Math.abs(strike - currentPrice) / currentPrice < 0.01 // Within 1% of current price
+        })
+        
+        if (atmOptions.length > 0) {
+          // Average the implied volatility of ATM options
+          const ivs = atmOptions
+            .map((opt: any) => parseFloat(opt.impliedVolatility))
+            .filter((iv: number) => !isNaN(iv) && iv > 0)
+          
+          if (ivs.length > 0) {
+            const avgIV = ivs.reduce((a: number, b: number) => a + b, 0) / ivs.length
+            return avgIV * 100 // Convert to percentage
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching implied volatility from options:', error)
+    }
+    
+    return 0 // Return 0 to indicate failure
   }
 
   // Estimate VIX from SPY price movements

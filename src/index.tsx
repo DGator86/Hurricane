@@ -4,11 +4,17 @@ import { serveStatic } from 'hono/cloudflare-workers'
 import { renderer } from './renderer'
 import { PredictionEngine, OptionsScanner, TechnicalAnalysis, HurricaneModel, type Candle, type Prediction, type OptionsRecommendation } from './models/prediction'
 import { MarketDataService } from './market-data'
+import { EnhancedMarketDataService } from './market-data-enhanced'
 import { FinnhubDataService } from './finnhub-data'
+import { BacktestEngine } from './backtest'
+import { PredictionAccuracyAnalyzer } from './prediction-accuracy'
+import { GEXDataService } from './gex-data'
 
 type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
   FINNHUB_API_KEY: string
+  POLYGON_API_KEY: string
+  TWELVE_DATA_API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -405,7 +411,11 @@ app.get('/api/options/recommendations/all', async (c) => {
 
 // Get technical indicators from REAL market data
 app.get('/api/realmarket/indicators', async (c) => {
-  const marketData = new MarketDataService(c.env.ALPHA_VANTAGE_API_KEY)
+  // Use Polygon.io as PRIMARY data source
+  const marketData = new EnhancedMarketDataService(
+    c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D', // Polygon PRIMARY
+    c.env.ALPHA_VANTAGE_API_KEY // Alpha Vantage fallback
+  )
   
   try {
     // Fetch REAL daily data for technical analysis
@@ -463,6 +473,220 @@ app.get('/api/realdata/spy', async (c) => {
   } catch (error) {
     console.error('Error fetching SPY data:', error)
     return c.json({ error: 'Failed to fetch SPY data' }, 500)
+  }
+})
+
+// Run backtest for specified period
+app.get('/api/backtest/:days', async (c) => {
+  const days = parseInt(c.req.param('days') || '7')
+  const backtestEngine = new BacktestEngine(c.env.FINNHUB_API_KEY)
+  
+  try {
+    console.log(`Running backtest for ${days} days...`)
+    const result = await backtestEngine.runBacktest(days)
+    
+    return c.json({
+      success: true,
+      result: {
+        period: `${days} days`,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        initialCapital: result.initialCapital,
+        finalCapital: result.finalCapital,
+        totalReturn: `${(result.metrics.totalReturn * 100).toFixed(2)}%`,
+        metrics: result.metrics,
+        timeframeBreakdown: result.timeframeMetrics,
+        totalTrades: result.trades.length,
+        recentTrades: result.trades.slice(-10)
+      }
+    })
+  } catch (error) {
+    console.error('Backtest error:', error)
+    return c.json({ error: 'Failed to run backtest', details: error.message }, 500)
+  }
+})
+
+// Get backtest report as HTML
+app.get('/api/backtest/:days/report', async (c) => {
+  const days = parseInt(c.req.param('days') || '7')
+  const backtestEngine = new BacktestEngine(c.env.FINNHUB_API_KEY)
+  
+  try {
+    const result = await backtestEngine.runBacktest(days)
+    const htmlReport = backtestEngine.generateHTMLReport(result)
+    
+    return c.html(htmlReport)
+  } catch (error) {
+    console.error('Backtest report error:', error)
+    return c.text('Failed to generate backtest report: ' + error.message, 500)
+  }
+})
+
+// Analyze prediction accuracy (direction and targets)
+app.get('/api/accuracy/:days', async (c) => {
+  const days = parseInt(c.req.param('days') || '7')
+  const analyzer = new PredictionAccuracyAnalyzer(c.env.FINNHUB_API_KEY)
+  
+  try {
+    console.log(`🎯 Running prediction accuracy analysis for ${days} days...`)
+    const { results, metrics, recommendations } = await analyzer.analyzePredictionAccuracy(days)
+    
+    return c.json({
+      success: true,
+      analysis: {
+        period: `${days} days`,
+        totalPredictions: metrics.totalPredictions,
+        directionalAccuracy: `${metrics.directionalAccuracy.toFixed(1)}%`,
+        targetAccuracy: `${metrics.targetAccuracy.toFixed(1)}%`,
+        averageError: `${metrics.averageError.toFixed(2)}%`,
+        bestSettings: {
+          timeframe: metrics.bestPredictors.timeframe,
+          confidenceThreshold: metrics.bestPredictors.confidenceThreshold,
+          hurricaneLevel: metrics.bestPredictors.hurricaneLevel
+        },
+        byTimeframe: metrics.byTimeframe,
+        byConfidenceLevel: metrics.byConfidenceLevel,
+        byHurricaneLevel: metrics.byHurricaneLevel,
+        recommendations: recommendations,
+        sampleResults: results.slice(-10) // Last 10 predictions for review
+      }
+    })
+  } catch (error) {
+    console.error('Accuracy analysis error:', error)
+    return c.json({ error: 'Failed to analyze prediction accuracy', details: error.message }, 500)
+  }
+})
+
+// Get prediction accuracy report as HTML
+app.get('/api/accuracy/:days/report', async (c) => {
+  const days = parseInt(c.req.param('days') || '7')
+  const analyzer = new PredictionAccuracyAnalyzer(c.env.FINNHUB_API_KEY)
+  
+  try {
+    const { results, metrics, recommendations } = await analyzer.analyzePredictionAccuracy(days)
+    const htmlReport = analyzer.generateHTMLReport(results, metrics, recommendations)
+    
+    return c.html(htmlReport)
+  } catch (error) {
+    console.error('Accuracy report error:', error)
+    return c.text('Failed to generate accuracy report: ' + error.message, 500)
+  }
+})
+
+// Test VIX data fetching
+app.get('/api/test/vix', async (c) => {
+  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
+  
+  try {
+    console.log('Testing VIX data fetching...')
+    const vix = await finnhub.getCurrentVIXLevel()
+    const spy = await finnhub.getCurrentSPYQuote()
+    
+    return c.json({
+      success: true,
+      vix: {
+        level: vix,
+        category: vix < 12 ? 'Low' : vix < 20 ? 'Normal' : vix < 30 ? 'High' : 'Very High',
+        hurricaneLevel: Math.floor(Math.min(5, Math.max(0, (vix - 10) / 6)))
+      },
+      spy: {
+        price: spy.price,
+        change: spy.change,
+        changePercent: spy.changePercent
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('VIX test error:', error)
+    return c.json({ error: 'Failed to fetch VIX', details: error.message }, 500)
+  }
+})
+
+// Get GEX (Gamma Exposure) data
+app.get('/api/market/gex', async (c) => {
+  const gexService = new GEXDataService(c.env.FINNHUB_API_KEY)
+  
+  try {
+    console.log('Calculating GEX data...')
+    const gexData = await gexService.calculateGEX()
+    
+    if (!gexData) {
+      return c.json({ error: 'Unable to calculate GEX data' }, 500)
+    }
+    
+    const interpretation = gexService.interpretGEX(gexData)
+    
+    return c.json({
+      success: true,
+      gex: gexData,
+      interpretation,
+      timestamp: new Date().toISOString(),
+      dataSource: gexData.totalGEX > 0 ? 'Estimated from market conditions' : 'Options data unavailable'
+    })
+  } catch (error) {
+    console.error('GEX calculation error:', error)
+    return c.json({ error: 'Failed to calculate GEX', details: error.message }, 500)
+  }
+})
+
+// Get combined market internals (VIX + GEX)
+app.get('/api/market/internals', async (c) => {
+  const finnhub = new FinnhubDataService(c.env.FINNHUB_API_KEY)
+  const gexService = new GEXDataService(c.env.FINNHUB_API_KEY)
+  
+  try {
+    const [vix, spy, gexData] = await Promise.all([
+      finnhub.getCurrentVIXLevel(),
+      finnhub.getCurrentSPYQuote(),
+      gexService.calculateGEX()
+    ])
+    
+    const hurricaneLevel = Math.floor(Math.min(5, Math.max(0, (vix - 10) / 6)))
+    
+    // Combined market assessment
+    const marketCondition = {
+      volatility: vix < 15 ? 'Low' : vix < 20 ? 'Normal' : vix < 25 ? 'Elevated' : 'High',
+      gamma: gexData?.marketMakerPositioning || 'unknown',
+      trend: spy.changePercent > 0.5 ? 'Bullish' : spy.changePercent < -0.5 ? 'Bearish' : 'Neutral',
+      recommendation: ''
+    }
+    
+    // Generate trading recommendation based on VIX and GEX
+    if (vix < 15 && gexData?.netGEX > 0) {
+      marketCondition.recommendation = 'Low vol + positive GEX: Sell options, fade moves'
+    } else if (vix > 20 && gexData?.netGEX < 0) {
+      marketCondition.recommendation = 'High vol + negative GEX: Buy options, follow trends'
+    } else if (vix < 20 && gexData?.netGEX < 0) {
+      marketCondition.recommendation = 'Low vol + negative GEX: Potential vol expansion setup'
+    } else {
+      marketCondition.recommendation = 'Normal conditions: Standard positioning'
+    }
+    
+    return c.json({
+      success: true,
+      spy: {
+        price: spy.price,
+        change: spy.change,
+        changePercent: spy.changePercent
+      },
+      vix: {
+        level: vix,
+        hurricaneLevel,
+        category: ['Calm Seas', 'Light Breeze', 'Tropical Depression', 'Tropical Storm', 'Category 1', 'Category 5'][hurricaneLevel]
+      },
+      gex: gexData ? {
+        net: gexData.netGEX,
+        total: gexData.totalGEX,
+        positioning: gexData.marketMakerPositioning,
+        gammaFlip: gexData.gammaFlipPoint,
+        volatilityRegime: gexData.expectedVolatility
+      } : null,
+      marketCondition,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Market internals error:', error)
+    return c.json({ error: 'Failed to fetch market internals', details: error.message }, 500)
   }
 })
 
