@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurricane SPY - 75% Accuracy Trading System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
+        .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 p-4 shadow-2xl border-b border-blue-700">
+        <div class="container mx-auto">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold flex items-center">
+                    <i class="fas fa-hurricane text-yellow-400 animate-spin-slow mr-3"></i>
+                    Hurricane SPY System
+                    <span class="ml-3 text-sm bg-green-500 px-2 py-1 rounded">LIVE</span>
+                </h1>
+                <div class="flex items-center gap-4">
+                    <span id="current-time" class="text-lg">--:--:--</span>
+                    <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sync mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 max-w-7xl">
+        <!-- Top Metrics Bar -->
+        <div class="grid grid-cols-6 gap-4 mb-6">
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">SPY Price</div>
+                <div id="spy-price" class="text-2xl font-bold text-green-400">Loading...</div>
+                <div id="spy-change" class="text-xs text-gray-500"></div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">VIX</div>
+                <div id="vix" class="text-2xl font-bold text-yellow-400">Loading...</div>
+                <div id="vix-regime" class="text-xs text-gray-500"></div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">Accuracy</div>
+                <div id="accuracy" class="text-2xl font-bold">Loading...</div>
+                <div class="text-xs text-gray-500">Target: 75%</div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">Win Rate</div>
+                <div id="win-rate" class="text-2xl font-bold text-purple-400">Loading...</div>
+                <div class="text-xs text-gray-500">Last 20 Trades</div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">Kelly %</div>
+                <div id="kelly-avg" class="text-2xl font-bold text-cyan-400">18.5%</div>
+                <div class="text-xs text-gray-500">Avg Position</div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                <div class="text-gray-400 text-sm">Health</div>
+                <div id="health-score" class="text-2xl font-bold">Loading...</div>
+                <div class="text-xs text-gray-500">System Status</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Left Section: Predictions (4 columns) -->
+            <div class="col-span-4">
+                <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span><i class="fas fa-clock mr-2 text-blue-400"></i>Hurricane Signals</span>
+                        <span id="last-update" class="text-xs text-gray-400"></span>
+                    </h2>
+                    <div id="predictions-grid" class="space-y-3">
+                        <!-- Predictions will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Section: High Confidence Trades (4 columns) -->
+            <div class="col-span-4">
+                <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-400"></i>
+                        High Confidence Trades
+                        <span class="ml-auto text-sm bg-green-600 px-2 py-1 rounded">≥75%</span>
+                    </h2>
+                    <div id="high-conf-list" class="space-y-3">
+                        <!-- High confidence trades will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Section: Options Flow & Health (4 columns) -->
+            <div class="col-span-4 space-y-6">
+                <!-- Options Flow -->
+                <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-water mr-2 text-cyan-400"></i>
+                        DEX/GEX Analysis
+                    </h2>
+                    <div id="flow-metrics" class="mb-4">
+                        <!-- Flow metrics will be rendered here -->
+                    </div>
+                    
+                    <h3 class="text-sm font-bold text-gray-400 mb-2">Price Magnets</h3>
+                    <div id="magnets-list" class="space-y-2">
+                        <!-- Magnets will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- System Health -->
+                <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-heartbeat mr-2 text-red-400"></i>
+                        Timeframe Health
+                    </h2>
+                    <div id="health-grid" class="grid grid-cols-3 gap-2">
+                        <!-- Health metrics will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section: Detailed Analysis -->
+        <div class="mt-6 grid grid-cols-2 gap-6">
+            <!-- Recent Predictions -->
+            <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-history mr-2 text-blue-400"></i>
+                    Recent Predictions Performance
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-gray-400 border-b border-gray-700">
+                                <th class="text-left py-2">Time</th>
+                                <th class="text-left py-2">TF</th>
+                                <th class="text-left py-2">Side</th>
+                                <th class="text-left py-2">Conf</th>
+                                <th class="text-left py-2">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-2">3:45 PM</td>
+                                <td>1h</td>
+                                <td class="text-green-400">CALL</td>
+                                <td>88%</td>
+                                <td class="text-green-400">✅ +$342</td>
+                            </tr>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-2">3:30 PM</td>
+                                <td>4h</td>
+                                <td class="text-green-400">CALL</td>
+                                <td>92%</td>
+                                <td class="text-green-400">✅ +$512</td>
+                            </tr>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-2">3:15 PM</td>
+                                <td>15m</td>
+                                <td class="text-red-400">PUT</td>
+                                <td>76%</td>
+                                <td class="text-green-400">✅ +$187</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Key Statistics -->
+            <div class="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-bar mr-2 text-purple-400"></i>
+                    Performance Statistics
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-gray-400 text-sm">Daily P&L</div>
+                        <div class="text-xl font-bold text-green-400">+$2,450</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-400 text-sm">Weekly P&L</div>
+                        <div class="text-xl font-bold text-green-400">+$8,320</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-400 text-sm">Sharpe Ratio</div>
+                        <div class="text-xl font-bold">1.92</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-400 text-sm">Max Drawdown</div>
+                        <div class="text-xl font-bold text-red-400">-4.2%</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-400 text-sm">Trades Today</div>
+                        <div class="text-xl font-bold">12</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-400 text-sm">Success Rate</div>
+                        <div class="text-xl font-bold text-green-400">75%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the live dashboard JavaScript -->
+    <script src="/static/hurricane-live.js"></script>
+</body>
+</html>

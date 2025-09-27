@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurricane SPY Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-3xl font-bold mb-6">Hurricane SPY Dashboard Test</h1>
+    
+    <div class="grid grid-cols-3 gap-6">
+        <!-- Predictions Test -->
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h2 class="text-xl font-bold mb-3">Predictions</h2>
+            <div id="predictions" class="text-sm">Loading...</div>
+        </div>
+        
+        <!-- Flow Test -->
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h2 class="text-xl font-bold mb-3">Options Flow</h2>
+            <div id="flow" class="text-sm">Loading...</div>
+        </div>
+        
+        <!-- Health Test -->
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h2 class="text-xl font-bold mb-3">Health Metrics</h2>
+            <div id="health" class="text-sm">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        // Test API calls
+        async function testAPIs() {
+            try {
+                // Test predictions
+                const predResp = await axios.get('/api/meteorology/predict?symbol=SPY');
+                const predictions = predResp.data.perTF || [];
+                document.getElementById('predictions').innerHTML = `
+                    <div class="space-y-2">
+                        ${predictions.slice(0, 3).map(p => `
+                            <div class="border-l-4 ${p.side === 'CALL' ? 'border-green-500' : 'border-red-500'} pl-2">
+                                <div class="font-bold">${p.tf}: ${p.side}</div>
+                                <div>Conf: ${(p.confidence * 100).toFixed(1)}%</div>
+                                <div>Regime: ${p.regime}</div>
+                            </div>
+                        `).join('')}
+                        <div class="text-green-400">✓ ${predictions.length} timeframes loaded</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('predictions').innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+            }
+
+            try {
+                // Test flow
+                const flowResp = await axios.get('/api/options/flow?symbol=SPY');
+                const flow = flowResp.data.flow;
+                document.getElementById('flow').innerHTML = `
+                    <div class="space-y-2">
+                        <div>Spot: $${flow.spot.toFixed(2)}</div>
+                        <div>DEX Z: ${flow.dex.zscore.toFixed(2)}</div>
+                        <div>GEX Z: ${flow.gex.zscore.toFixed(2)}</div>
+                        <div>Magnets: ${flow.magnets.length}</div>
+                        ${flow.magnets.slice(0, 2).map(m => `
+                            <div class="text-sm">
+                                ${m.type === 'attractor' ? '🎯' : '🚫'} 
+                                ${m.strike} (${(m.strength * 100).toFixed(0)}%)
+                            </div>
+                        `).join('')}
+                        <div class="text-green-400">✓ Flow data loaded</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('flow').innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+            }
+
+            try {
+                // Test health
+                const healthResp = await axios.get('/api/meteorology/health');
+                const health = healthResp.data;
+                const tf1h = health.metrics['1h'];
+                document.getElementById('health').innerHTML = `
+                    <div class="space-y-2">
+                        <div>Overall: ${health.overall ? '✅' : '❌'}</div>
+                        <div>Avg Health: ${(health.avgHealth * 100).toFixed(0)}%</div>
+                        <div class="mt-2 font-bold">1H Health:</div>
+                        <div>Score: ${(tf1h.score * 100).toFixed(0)}%</div>
+                        <div>P80: ${(tf1h.p80Coverage * 100).toFixed(0)}%</div>
+                        <div>Dir Acc: ${(tf1h.directionalAccuracy * 100).toFixed(0)}%</div>
+                        <div class="text-green-400">✓ Health data loaded</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('health').innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Run tests on load
+        testAPIs();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(testAPIs, 10000);
+    </script>
+</body>
+</html>

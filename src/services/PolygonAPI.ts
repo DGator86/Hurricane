@@ -409,4 +409,51 @@ export class PolygonAPI {
       return null
     }
   }
+  
+  /**
+   * Get options chain for a symbol
+   * Note: Polygon options endpoints require additional subscription
+   * This returns synthetic data for demonstration
+   */
+  async getOptionsChain(symbol: string = 'SPY'): Promise<any[]> {
+    try {
+      // Get current date
+      const today = new Date().toISOString().split('T')[0]
+      
+      // Polygon options endpoint (requires options subscription)
+      const url = `${this.baseURL}/v3/reference/options/contracts?underlying_ticker=${symbol}&expiration_date.gte=${today}&limit=100&apiKey=${this.apiKey}`
+      
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        console.warn('Options chain endpoint failed or requires subscription')
+        // Return empty array, will fall back to synthetic data
+        return []
+      }
+      
+      const data = await response.json()
+      
+      if (data.results && data.results.length > 0) {
+        // Transform Polygon options format to our format
+        return data.results.map((contract: any) => ({
+          symbol: contract.ticker,
+          strike: contract.strike_price,
+          expiration: new Date(contract.expiration_date),
+          type: contract.contract_type === 'call' ? 'call' : 'put',
+          bid: contract.bid || 0,
+          ask: contract.ask || 0,
+          mid: ((contract.bid || 0) + (contract.ask || 0)) / 2,
+          last: contract.last_quote?.last || 0,
+          volume: contract.day?.volume || 0,
+          openInterest: contract.open_interest || 0,
+          impliedVolatility: contract.implied_volatility || 0.20
+        }))
+      }
+      
+      return []
+    } catch (error) {
+      console.error('Error fetching options chain:', error)
+      return []
+    }
+  }
 }
