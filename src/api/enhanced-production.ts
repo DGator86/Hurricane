@@ -42,7 +42,10 @@ function getServices(env: Bindings) {
   }
   
   if (!predictionSystem) {
-    predictionSystem = new IntegratedPredictionSystem(env)
+    predictionSystem = new IntegratedPredictionSystem(
+      env.POLYGON_API_KEY,
+      env.TWELVE_DATA_API_KEY
+    )
   }
   
   return { optionsScanner, backtestingTracker, predictionSystem }
@@ -79,10 +82,10 @@ api.get('/predictions-with-options', async (c) => {
     const { optionsScanner, predictionSystem } = getServices(c.env)
     
     // Get predictions
-    const predictions = await predictionSystem.generateAllPredictions()
+    const predictions = await predictionSystem.generatePrediction()
     
     // Get current SPY price
-    const spotPrice = predictions.marketData?.price || 455
+    const spotPrice = predictions.currentPrice || 455
     
     // Get option chain
     const optionChain = await getOptionChain('SPY', c.env)
@@ -110,9 +113,17 @@ api.get('/predictions-with-options', async (c) => {
     return c.json({
       predictions: predictions.predictions,
       options: Object.fromEntries(optionRecommendations),
-      marketData: predictions.marketData,
-      technicals: predictions.technicals,
-      timestamp: new Date().toISOString()
+      marketData: {
+        price: predictions.currentPrice,
+        regime: predictions.marketRegime,
+        vix: 16  // Default VIX
+      },
+      technicals: predictions.predictions,  // Use predictions as technicals
+      overallConfidence: predictions.overallConfidence,
+      kellySizing: predictions.kellySizing,
+      criticalLevels: predictions.criticalLevels,
+      warnings: predictions.warnings,
+      timestamp: predictions.timestamp
     })
   } catch (error) {
     console.error('Error generating predictions with options:', error)
@@ -126,8 +137,8 @@ api.get('/options-recommendations', async (c) => {
     const { optionsScanner, predictionSystem } = getServices(c.env)
     
     // Get predictions
-    const predictions = await predictionSystem.generateAllPredictions()
-    const spotPrice = predictions.marketData?.price || 455
+    const predictions = await predictionSystem.generatePrediction()
+    const spotPrice = predictions.currentPrice || 455
     
     // Get option chain
     const optionChain = await getOptionChain('SPY', c.env)
