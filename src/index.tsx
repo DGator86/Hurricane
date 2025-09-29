@@ -95,6 +95,10 @@ app.route('/api/production', productionApi)
 import enhancedProductionApi from './api/enhanced-production'
 app.route('/api/enhanced', enhancedProductionApi)
 
+// QuantConnect Integration API
+import quantConnectApi from './api/quantconnect'
+app.route('/api/quantconnect', quantConnectApi)
+
 // Hurricane Dashboard - Main Page
 app.get('/', (c) => {
   return c.render(<HurricaneDashboard />, { title: 'Hurricane SPY - 75% Accuracy Trading System' })
