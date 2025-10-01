@@ -12,6 +12,20 @@ Hurricane SPY is a sophisticated multi-timeframe prediction system for SPY optio
 - **Backtesting Accuracy Tracking** (-15m, -30m, -1hr, -4hr, -1d)
 - **Market Meteorology Framework** treating SPY like a storm system
 
+## 🔌 Unusual Whales Integration
+
+The live Hurricane API now prefers the Unusual Whales data feed for predictions, regimes, and options flow. Configure the following environment variables before starting the worker or running Python utilities:
+
+| Variable | Description |
+| --- | --- |
+| `UNUSUAL_WHALES_API_TOKEN` | **Required.** Token from your Unusual Whales account. |
+| `UNUSUAL_WHALES_API_BASE` | Optional base URL override (defaults to `https://api.unusualwhales.com`). |
+| `UNUSUAL_WHALES_PREDICT_PATH` | Optional override for the standard prediction endpoint path. |
+| `UNUSUAL_WHALES_ENHANCED_PATH` | Optional override for the enhanced prediction endpoint path. |
+| `UNUSUAL_WHALES_FLOW_PATH` | Optional override for the options-flow endpoint path. |
+
+If the token is omitted the system will refuse to serve predictions. Configure the environment variables above before running any scripts or starting the worker.
+
 ## 🎯 Core Features
 
 ### 1. **Options Pricing & Greeks**
