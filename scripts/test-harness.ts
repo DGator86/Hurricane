@@ -592,14 +592,21 @@ export class HurricaneTestHarness {
     console.log('------|-------------|------------|-------|-----------|-----------|----------')
     
     for (const [tf, pred] of Object.entries(result.predictions)) {
+      const targetDisplay = pred.targets?.target !== undefined
+        ? `$${pred.targets.target.toFixed(2).padStart(8)}`
+        : '   --   ';
+      const stopDisplay = pred.stop !== null && pred.stop !== undefined
+        ? `$${pred.stop.toFixed(2)}`
+        : '--';
+
       console.log(
         `${tf.padEnd(5)} | ` +
         `${pred.direction.padEnd(11)} | ` +
         `${(pred.confidence * 100).toFixed(1).padStart(9)}% | ` +
         `${(pred.kellyFraction * 100).toFixed(1).padStart(5)}% | ` +
         `${pred.regime.padEnd(9)} | ` +
-        `$${pred.targets.target.toFixed(2).padStart(8)} | ` +
-        `$${pred.targets.stop.toFixed(2)}`
+        `${targetDisplay} | ` +
+        `${stopDisplay}`
       )
     }
     

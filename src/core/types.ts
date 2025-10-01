@@ -14,9 +14,9 @@ export type PredictionResult = {
   side: "CALL"|"PUT"|"NONE",
   cone: Cone,
   entryPx: number,
-  targets: { target: number },  // or { long:number, short:number } if you prefer
-  stop: number,
+  targets: { target: number } | null,  // or { long:number, short:number } if you prefer
+  stop: number | null,
   rMultiple: { reward:number, risk:number, rr:number },
   size: number,
-  option: { side:"CALL"|"PUT"|"NONE", strike:number, dte:number }
+  option: { side:"CALL"|"PUT"|"NONE", strike:number|null, dte:number }
 };
