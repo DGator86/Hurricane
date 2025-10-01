@@ -480,16 +480,27 @@ export class EnhancedPredictionModel {
     // q = probability of losing (1-p)
     // b = ratio of win to loss
     
-    const p = confidence * historicalWinRate
+    const boundedConfidence = Math.min(Math.max(confidence, 0), 1)
+    const boundedHistorical = Math.min(Math.max(historicalWinRate, 0), 1)
+
+    // Blend model confidence with historical hit-rate instead of multiplying them.
+    // Multiplication drove p extremely low which collapsed the Kelly fraction to zero.
+    const blendedWinRate = 0.65 * boundedConfidence + 0.35 * boundedHistorical
+    const p = Math.min(Math.max(blendedWinRate, 0.05), 0.95)
     const q = 1 - p
-    const b = Math.abs(expectedReturn)
-    
+
+    // Treat the expected return as the reward side of the trade and assume a
+    // 2:1 reward-to-risk ratio unless the expected move is very small.
+    const normalizedEdge = Math.max(Math.abs(expectedReturn), 0.01)
+    const assumedRisk = Math.max(normalizedEdge / 2, 0.005)
+    const b = normalizedEdge / assumedRisk
+
     const kellyFraction = (p * b - q) / b
-    
-    // Apply Kelly safety factor (typically 0.25 to 0.5)
-    const safetyFactor = 0.25
+
+    // Apply Kelly safety factor and cap the final sizing to a conservative 25%.
+    const safetyFactor = 0.5
     const safeKelly = Math.max(0, Math.min(0.25, kellyFraction * safetyFactor))
-    
+
     return safeKelly
   }
 }

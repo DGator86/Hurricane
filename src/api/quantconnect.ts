@@ -60,19 +60,20 @@ api.get('/predictions/current', async (c) => {
     
     // Process each timeframe
     for (const [tf, pred] of Object.entries(predictions.predictions)) {
+      const normalizedDirection = EnhancedOptionsScanner.normalizeDirection(pred.direction)
       const option = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: pred.direction,
+          direction: normalizedDirection,
           expectedReturn: pred.expectedMove / 100,
           confidence: pred.confidence,
           timeframe: tf
         },
         optionChain
       )
-      
+
       qcFormat.timeframes[tf] = {
-        direction: pred.direction === 'BUY' ? 1 : pred.direction === 'SELL' ? -1 : 0,
+        direction: normalizedDirection === 'bullish' ? 1 : normalizedDirection === 'bearish' ? -1 : 0,
         confidence: pred.confidence,
         target_price: pred.targetPrice,
         stop_loss: pred.stopLoss,

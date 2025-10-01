@@ -94,11 +94,16 @@ api.get('/predictions-with-options', async (c) => {
     const optionRecommendations = new Map<string, OptionRecommendation>()
     
     for (const [timeframe, prediction] of Object.entries(predictions.predictions)) {
+      const expectedReturn = typeof prediction.expectedReturn === 'number'
+        ? prediction.expectedReturn
+        : typeof prediction.expectedMove === 'number'
+          ? prediction.expectedMove / 100
+          : 0
       const recommendation = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: prediction.direction,
-          expectedReturn: prediction.expectedReturn,
+          direction: EnhancedOptionsScanner.normalizeDirection(prediction.direction),
+          expectedReturn,
           confidence: prediction.confidence,
           timeframe
         },
