@@ -4,6 +4,7 @@
  */
 
 import { PolygonAPI } from '../services/PolygonAPI'
+import { DataSourceGuard } from '../services/DataSourceGuard'
 
 export interface MarketData {
   spy_price: number
@@ -65,8 +66,9 @@ export class EnhancedMarketDataGenerator {
         console.warn('⚠️ Falling back to synthetic data')
       }
     }
-    
+
     // Fallback to synthetic data
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataGenerator.generateCurrentData')
     const syntheticData = this.generateSyntheticData()
     this.cache.set(cacheKey, { data: syntheticData, timestamp: Date.now() })
     return syntheticData
@@ -175,6 +177,7 @@ export class EnhancedMarketDataGenerator {
     movingAverages: { ma5: number; ma20: number; ma50: number; ma200: number }
   }> {
     if (!this.polygonApi) {
+      DataSourceGuard.ensureLiveData('EnhancedMarketDataGenerator.getTechnicalIndicators')
       // Return synthetic indicators
       return {
         rsi: 50 + (Math.random() - 0.5) * 30,

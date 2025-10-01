@@ -6,6 +6,7 @@
 
 import { type Candle } from './models/prediction'
 import { PolygonAPI } from './services/PolygonAPI'
+import { DataSourceGuard } from './services/DataSourceGuard'
 
 export class EnhancedMarketDataService {
   private polygonApi: PolygonAPI | null = null
@@ -26,8 +27,10 @@ export class EnhancedMarketDataService {
       console.log('📊 Alpha Vantage available as fallback')
     }
     
+    console.log(`🛡️ ${DataSourceGuard.describePolicy()}`)
+
     if (!polygonKey && !alphaVantageKey) {
-      console.warn('⚠️ No API keys provided, will use synthetic data only')
+      console.warn('⚠️ No API keys provided, synthetic fallback will trigger unless disabled by policy')
     }
   }
 
@@ -83,6 +86,8 @@ export class EnhancedMarketDataService {
   
   // Generate synthetic historical data for testing
   private generateSyntheticHistoricalData(date: string): any {
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.generateSyntheticHistoricalData')
+
     const basePrice = 580 + (Math.sin(Date.parse(date) / 86400000) * 10)
     const dayChange = (Math.random() - 0.5) * 5
     
@@ -209,6 +214,7 @@ export class EnhancedMarketDataService {
 
     // Final fallback: Synthetic data
     console.warn('⚠️ Using synthetic data (all APIs failed)')
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.getCurrentSPYQuote')
     const syntheticResult = {
       price: 420 + (Math.random() - 0.5) * 10,
       change: (Math.random() - 0.5) * 5,
@@ -277,6 +283,7 @@ export class EnhancedMarketDataService {
 
     // Fallback to synthetic data
     console.warn('⚠️ Generating synthetic historical data')
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.getHistoricalData')
     return this.generateSyntheticCandles(interval, outputSize === 'full' ? 500 : 100)
   }
 
@@ -301,6 +308,7 @@ export class EnhancedMarketDataService {
     }
 
     // Synthetic RSI
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.getRSI')
     const syntheticRSI = 50 + (Math.random() - 0.5) * 30
     this.setCache(cacheKey, syntheticRSI)
     return syntheticRSI
@@ -326,6 +334,7 @@ export class EnhancedMarketDataService {
     }
 
     // Synthetic MACD
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.getMACD')
     const syntheticMACD = {
       macd: (Math.random() - 0.5) * 2,
       signal: (Math.random() - 0.5) * 1.5,
@@ -356,6 +365,7 @@ export class EnhancedMarketDataService {
     }
 
     // Synthetic VIX
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.getVIX')
     const syntheticVIX = 15 + Math.random() * 10
     this.setCache(cacheKey, syntheticVIX)
     return syntheticVIX
@@ -363,6 +373,8 @@ export class EnhancedMarketDataService {
 
   // Generate synthetic candles when APIs fail
   private generateSyntheticCandles(interval: string, count: number): Candle[] {
+    DataSourceGuard.ensureLiveData('EnhancedMarketDataService.generateSyntheticCandles')
+
     const candles: Candle[] = []
     const now = new Date()
     

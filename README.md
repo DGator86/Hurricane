@@ -105,6 +105,12 @@ interface OptionRecommendation {
 2. **Alpha Vantage** (FALLBACK) - Backup data source
 3. **Synthetic Data** (LAST RESORT) - Generated data for continuity
 
+### Live Data Enforcement
+- Synthetic fallbacks are **disabled by default** through the new `DataSourceGuard`
+- Set `HURRICANE_REQUIRE_LIVE_DATA=true` (default) to enforce real market feeds
+- Development teams can temporarily allow mock data by setting `HURRICANE_ALLOW_SYNTHETIC=true`
+- Run `node scripts/live-integrity-check.mjs` to verify GitHub + Alpaca connectivity and ensure live data credentials are installed
+
 ## 🎨 User Guide
 
 ### Reading the Dashboard
