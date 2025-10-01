@@ -3,12 +3,24 @@ import type { TF } from "../core/types";
 const MULT = { "1m":1.5, "15m":2.0, "1h":3.0, "4h":4.0, "1d":5.0 } as const;
 const FLOOR = { "1m":0.0005, "15m":0.0015, "1h":0.0025, "4h":0.0040, "1d":0.0075 } as const;
 
-export function atrTargetsAndStops(series:any, fusedSide:number, entry:number, tf:TF){
+type ATRTargets = {
+  targets: { target: number };
+  stop: number;
+  rMultiple: { reward: number; risk: number; rr: number };
+  suggestedStrike: number;
+  rewardRisk: number;
+};
+
+export function atrTargetsAndStops(series:any, fusedSide:number, entry:number, tf:TF): ATRTargets | null {
   const atrRaw = series.tailATR;
   const px = entry ?? series.tailClose;
   const atr = Math.max(atrRaw, FLOOR[tf]*px);
   const m = MULT[tf];
-  const dir = fusedSide >= 0 ? +1 : -1;
+  const dir = fusedSide > 0 ? +1 : fusedSide < 0 ? -1 : 0;
+
+  if (dir === 0) {
+    return null;
+  }
 
   const target = px + dir * m * atr;
   const stop   = px - dir * 1.0 * atr;
