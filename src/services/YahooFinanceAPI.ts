@@ -44,7 +44,7 @@ export class YahooFinanceAPI {
         throw new Error(`Yahoo Finance API error: ${response.status}`)
       }
       
-      const data = await response.json()
+      const data = await response.json() as any
       
       // Extract the quotes from the response
       const result = data.chart?.result?.[0]
@@ -86,7 +86,7 @@ export class YahooFinanceAPI {
           throw new Error(`Yahoo Finance backup failed: ${response.status}`)
         }
         
-        const data = await response.json()
+        const data = await response.json() as any
         const result = data.chart?.result?.[0]
         
         if (!result) {
@@ -148,7 +148,7 @@ export class YahooFinanceAPI {
         throw new Error(`Yahoo Finance quote error: ${response.status}`)
       }
       
-      const data = await response.json()
+      const data = await response.json() as any
       const quote = data.quoteResponse?.result?.[0]
       
       if (!quote) {
@@ -195,7 +195,7 @@ export class YahooFinanceAPI {
         throw new Error(`Yahoo Finance options error: ${response.status}`)
       }
       
-      const data = await response.json()
+      const data = await response.json() as any
       const options = data.optionChain?.result?.[0]
       
       if (!options) {

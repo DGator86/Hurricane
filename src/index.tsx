@@ -906,8 +906,7 @@ app.get('/old-dashboard', (c) => {
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
       <script src="/static/prediction-system.js"></script>
-    </div>,
-    { title: 'Hurricane SPY - Advanced Prediction System' }
+    </div>
   )
 })
 
