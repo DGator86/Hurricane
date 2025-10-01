@@ -4,12 +4,13 @@ Generate predictions from the API for backtesting
 """
 
 import json
-import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
-API_URL = "http://localhost:3000/api/meteorology/predict"
+from unusual_whales_client import UnusualWhalesClient
+
 PREDICTIONS_DIR = Path("predictions")
+client = UnusualWhalesClient()
 
 # Create predictions directory
 PREDICTIONS_DIR.mkdir(exist_ok=True)
@@ -29,27 +30,22 @@ def generate_predictions_for_dates(days_back=7):
         
         try:
             print(f"Fetching prediction for {date_str}...")
-            
-            # Try API with ?asof parameter
-            response = requests.get(API_URL, params={"asof": date_str}, timeout=5)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Save to file
-                output_file = PREDICTIONS_DIR / f"{date_str}.json"
-                with open(output_file, 'w') as f:
-                    json.dump(data, f, indent=2)
-                
-                print(f"  ✅ Saved prediction to {output_file}")
-                generated.append(date_str)
-            else:
-                print(f"  ❌ Failed to fetch (status: {response.status_code})")
-                failed.append(date_str)
-                
-        except requests.exceptions.RequestException as e:
-            print(f"  ❌ Request failed: {e}")
-            failed.append(date_str)
+
+            if not client.is_configured:
+                raise RuntimeError(
+                    "Missing Unusual Whales credentials. Set UNUSUAL_WHALES_API_TOKEN."
+                )
+
+            data = client.fetch_prediction("SPY", asof=date_str)
+
+            # Save to file
+            output_file = PREDICTIONS_DIR / f"{date_str}.json"
+            with open(output_file, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            print(f"  ✅ Saved prediction to {output_file}")
+            generated.append(date_str)
+
         except Exception as e:
             print(f"  ❌ Error: {e}")
             failed.append(date_str)

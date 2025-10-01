@@ -57,11 +57,11 @@ The system tends to predict wider cones than necessary, especially on shorter ti
 ### Immediate Actions
 1. **Enhance directional signals** - Increase ensemble member weights
 2. **Improve regime detection** - Add more variation in regime transitions
-3. **Use real historical data** - Connect to Polygon.io historical API
+3. **Use real historical data** - Expand Unusual Whales coverage beyond current snapshots
 4. **Calibrate Kelly sizing** - Current position sizes may be too conservative
 
 ### Next Steps
-1. Run backtests with real SPY data from Polygon.io
+1. Run backtests with expanded Unusual Whales history once available
 2. Test across different market conditions (2020 COVID, 2022 bear market, 2023 rally)
 3. Optimize ensemble weights based on regime
 4. Implement option-specific backtesting for 0DTE strategies
@@ -85,6 +85,25 @@ python3 backtest_hurricane.py offline
 - `backtest_results/trade_log.csv` - Individual trade details
 - `backtest_results/by_regime_summary.csv` - Performance by market regime
 - `predictions/*.json` - Saved predictions for each date
+
+## Latest Offline Backtest (Requested 3-Month Window)
+
+- **Execution Date**: 2025-09-26
+- **Requested Window**: Approx. 3 months (rolling)
+- **Available Data Window**: 2025-09-16 → 2025-09-26 (11 saved prediction files)
+- **Total Trades Evaluated**: 54 (9 trading days × 6 timeframes)
+- **Win Rate**: 0.0%
+- **Average R-Multiple**: 0.00
+- **Regime Coverage**: RANGING (48 trades), RANGING | HIGH_VOL (6 trades)
+- **Cone Calibration**: 7.9% of outcomes within 25% cone width; 77.8% outside 50%
+
+> **Note:** The offline backtest automatically clamps the analysis window to the locally saved prediction files. Providing a longer history of daily predictions is required to evaluate a full three-month period.
+
+### Data availability constraints
+
+- The offline harness currently points at `predictions_unusual_whales/`, which only contains eleven daily prediction snapshots covering **2025-09-16 → 2025-09-26**. Any request for a longer window (e.g., three months) is truncated to that span.
+- Historical predictions exist in `predictions/`, but they are derived from a different feed. To evaluate the full SPY model history, we need the Unusual Whales exports copied into `predictions_unusual_whales/` for each missing trading day.
+- Until those files are added, the model cannot be evaluated before 2025-09-16 in offline mode; the CLI will emit a warning detailing how many days were clipped so operators can spot the gap immediately.
 
 ## Conclusion
 

@@ -21,6 +21,11 @@ type Bindings = {
   FINNHUB_API_KEY: string
   POLYGON_API_KEY: string
   TWELVE_DATA_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
+  UNUSUAL_WHALES_FLOW_PATH?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -85,8 +90,8 @@ app.route('/api', newMeteorology)
 // Options Flow and Health API
 app.route('/api/options', flowApi)
 
-// Mock Hurricane API for testing
-app.route('/api/meteorology', hurricaneMockApi)
+// Mock Hurricane API remains available under /api/mock for QA
+app.route('/api/mock/meteorology', hurricaneMockApi)
 
 // Production-ready features API
 app.route('/api/production', productionApi)
