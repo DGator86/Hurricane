@@ -445,12 +445,15 @@ app.get('/hurricane-test', (c) => {
             }
             
             container.innerHTML = timeframes.map(tf => {
-                const color = tf.side === 'CALL' ? 'green' : 'red';
-                const icon = tf.side === 'CALL' ? 'arrow-up' : 'arrow-down';
+                const isCall = tf.side === 'CALL';
+                const isPut = tf.side === 'PUT';
+                const color = isCall ? 'green' : isPut ? 'red' : 'gray';
+                const icon = isCall ? 'arrow-up' : isPut ? 'arrow-down' : 'minus';
+                const sideLabel = isCall ? 'CALL' : isPut ? 'PUT' : 'FLAT';
                 const confPercent = (tf.confidence * 100).toFixed(1);
-                const confColor = tf.confidence >= 0.75 ? 'text-green-400' : 
+                const confColor = tf.confidence >= 0.75 ? 'text-green-400' :
                                  tf.confidence >= 0.60 ? 'text-yellow-400' : 'text-gray-400';
-                
+
                 // Determine hurricane category
                 const hurricaneCat = tf.confidence >= 0.90 ? 'Cat-5' :
                                     tf.confidence >= 0.80 ? 'Cat-4' :
@@ -463,7 +466,7 @@ app.get('/hurricane-test', (c) => {
                         <div class="flex items-center gap-3">
                             <div class="text-lg font-bold text-gray-300">\${tf.tf}</div>
                             <i class="fas fa-\${icon} text-\${color}-400"></i>
-                            <span class="text-\${color}-400 font-bold">\${tf.side}</span>
+                            <span class="text-\${color}-400 font-bold">\${sideLabel}</span>
                         </div>
                         <div class="text-right">
                             <div class="\${confColor} font-bold">\${confPercent}%</div>
@@ -476,26 +479,44 @@ app.get('/hurricane-test', (c) => {
 
         function renderHighConfidenceTrades(timeframes) {
             const highConf = timeframes.filter(tf => tf.confidence >= 0.75);
+            const actionable = highConf.filter(tf => tf.side === 'CALL' || tf.side === 'PUT');
             const container = document.getElementById('high-confidence-trades');
-            
-            if (highConf.length === 0) {
+
+            if (actionable.length === 0) {
+                const neutralNote = highConf.length > 0
+                    ? '<p class="text-xs text-gray-500 mt-2">Signals are confident but currently neutral—waiting for direction.</p>'
+                    : '';
                 container.innerHTML = \`
                     <div class="text-center py-8 text-gray-400">
                         <i class="fas fa-search text-3xl mb-3"></i>
-                        <p>No high confidence trades at this time</p>
+                        <p>No actionable high confidence trades at this time</p>
+                        \${neutralNote}
                     </div>
                 \`;
                 return;
             }
-            
-            container.innerHTML = highConf.map(tf => {
-                const kellySize = Math.min(25, tf.confidence * 30).toFixed(1);
-                const color = tf.side === 'CALL' ? 'green' : 'red';
-                const spot = predictions.spot || 505.23;
-                const atr = tf.atr || 2.5;
-                const target = tf.side === 'CALL' ? spot + (atr * 1.5) : spot - (atr * 1.5);
-                const stop = tf.side === 'CALL' ? spot - atr : spot + atr;
-                
+
+            container.innerHTML = actionable.map(tf => {
+                const isCall = tf.side === 'CALL';
+                const color = isCall ? 'green' : 'red';
+                const fallbackSpot = Number.isFinite(predictions?.spot) ? predictions.spot : null;
+                const entry = Number.isFinite(tf.entryPx) ? tf.entryPx : fallbackSpot;
+                const entryDisplay = Number.isFinite(entry) ? '$' + entry.toFixed(2) : '--';
+                const rawTarget = typeof tf.targets?.target === 'number' && Number.isFinite(tf.targets.target)
+                    ? tf.targets.target
+                    : null;
+                const rawStop = typeof tf.stop === 'number' && Number.isFinite(tf.stop)
+                    ? tf.stop
+                    : null;
+                const targetDisplay = rawTarget !== null ? '$' + rawTarget.toFixed(2) : '--';
+                const stopDisplay = rawStop !== null ? '$' + rawStop.toFixed(2) : '--';
+                const kellySize = ((tf.size ?? 0) * 100).toFixed(1);
+                const buttonDisabled = rawTarget === null || rawStop === null;
+                const buttonClass = buttonDisabled
+                    ? 'bg-gray-600 px-3 py-1 rounded text-sm cursor-not-allowed opacity-70'
+                    : 'bg-' + color + '-600 hover:bg-' + color + '-700 px-3 py-1 rounded text-sm transition-colors';
+                const buttonLabel = buttonDisabled ? 'Await Signal' : 'Execute Trade';
+
                 return \`
                     <div class="border-2 border-\${color}-500 bg-\${color}-900/20 rounded-lg p-4">
                         <div class="flex justify-between items-center mb-2">
@@ -505,15 +526,15 @@ app.get('/hurricane-test', (c) => {
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div>
                                 <span class="text-gray-400">Entry:</span>
-                                <span class="text-white ml-1">$\${spot.toFixed(2)}</span>
+                                <span class="text-white ml-1">\${entryDisplay}</span>
                             </div>
                             <div>
                                 <span class="text-gray-400">Target:</span>
-                                <span class="text-\${color}-400 ml-1">$\${target.toFixed(2)}</span>
+                                <span class="text-\${color}-400 ml-1">\${targetDisplay}</span>
                             </div>
                             <div>
                                 <span class="text-gray-400">Stop:</span>
-                                <span class="text-red-400 ml-1">$\${stop.toFixed(2)}</span>
+                                <span class="text-red-400 ml-1">\${stopDisplay}</span>
                             </div>
                             <div>
                                 <span class="text-gray-400">Kelly:</span>
@@ -522,8 +543,8 @@ app.get('/hurricane-test', (c) => {
                         </div>
                         <div class="mt-3 flex justify-between items-center">
                             <span class="text-xs px-2 py-1 bg-gray-700 rounded">\${tf.regime || 'Trending'}</span>
-                            <button class="bg-\${color}-600 hover:bg-\${color}-700 px-3 py-1 rounded text-sm transition-colors">
-                                Execute Trade
+                            <button class="\${buttonClass}" \${buttonDisabled ? 'disabled' : ''}>
+                                \${buttonLabel}
                             </button>
                         </div>
                     </div>

@@ -20,19 +20,29 @@ export async function predictAll(symbol: string, asof: Date) {
       const entryPx = series.nextSessionOpen;                       // for backtests, else real-time best bid/ask
       const cone: Cone = buildCone(series, fused);                  // median + p50/p80/p95
       const atrPack = atrTargetsAndStops(series, fused.side, entryPx, tf);
-      const kelly = fractionalKelly(fused.confidence, atrPack.rewardRisk, regime);
-      const size = Math.min(kelly.fraction, kelly.maxCap);
+      const rewardRisk = atrPack?.rewardRisk ?? 0;
+      const kelly = fractionalKelly(fused.confidence, rewardRisk, regime);
+      const size = atrPack ? Math.min(kelly.fraction, kelly.maxCap) : 0;
 
-      const option = {
-        side: fused.side === +1 ? "CALL" : (fused.side === -1 ? "PUT" : "NONE"),
-        strike: atrPack.suggestedStrike,
+      const optionSide = fused.side === +1 ? "CALL" : (fused.side === -1 ? "PUT" : "NONE");
+      const option: PredictionResult["option"] = {
+        side: optionSide,
+        strike: atrPack?.suggestedStrike ?? null,
         dte: tf === "1m" ? 0 : (tf === "1h" ? 0 : 5),
       };
 
       const out: PredictionResult = {
-        tf, regime, confidence: fused.confidence, side: option.side,
-        cone, entryPx, targets: atrPack.targets, stop: atrPack.stop,
-        rMultiple: atrPack.rMultiple, size, option
+        tf,
+        regime,
+        confidence: fused.confidence,
+        side: option.side,
+        cone,
+        entryPx,
+        targets: atrPack?.targets ?? null,
+        stop: atrPack?.stop ?? null,
+        rMultiple: atrPack?.rMultiple ?? { reward: 0, risk: 0, rr: 0 },
+        size,
+        option,
       };
       return out;
     })
