@@ -479,17 +479,27 @@ export class EnhancedPredictionModel {
     // p = probability of winning
     // q = probability of losing (1-p)
     // b = ratio of win to loss
-    
-    const p = confidence * historicalWinRate
+
+    // Blend model confidence with historical win rate so strong signals can
+    // outweigh the base rate without being unfairly penalized.
+    const blendedProbability = 0.6 * confidence + 0.4 * historicalWinRate
+    const p = Math.min(0.95, Math.max(0.05, blendedProbability))
     const q = 1 - p
-    const b = Math.abs(expectedReturn)
-    
+
+    // Guard against extremely small expected returns that come from
+    // ATR-derived percentages by normalizing to percent units and ensuring
+    // a minimum edge when computing b.
+    const rawEdge = Math.abs(expectedReturn)
+    const edgePercent = rawEdge < 1 ? rawEdge * 100 : rawEdge
+    const minEdge = 0.5  // Require at least a 0.5% edge
+    const b = Math.max(edgePercent, minEdge)
+
     const kellyFraction = (p * b - q) / b
-    
+
     // Apply Kelly safety factor (typically 0.25 to 0.5)
     const safetyFactor = 0.25
     const safeKelly = Math.max(0, Math.min(0.25, kellyFraction * safetyFactor))
-    
+
     return safeKelly
   }
 }

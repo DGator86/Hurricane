@@ -86,9 +86,10 @@ export class IntegratedPredictionSystem {
     
     for (const tf of timeframes) {
       const signal = this.predictionModel.predict(features1m, tf)
+      const expectedReturnPercent = signal.expectedMove
       const kellySize = this.predictionModel.calculateKellySize(
         signal.confidence,
-        signal.expectedMove / 100
+        expectedReturnPercent
       )
       
       predictions[tf] = {
@@ -113,11 +114,12 @@ export class IntegratedPredictionSystem {
     
     // Determine market regime
     const marketRegime = this.determineMarketRegime(features1m)
-    
+
     // Calculate overall Kelly sizing
+    const strongestPrediction = predictions[strongestSignal]
     const kellySizing = this.predictionModel.calculateKellySize(
       overallConfidence,
-      predictions[strongestSignal].expectedMove / 100
+      strongestPrediction.expectedMove
     )
     
     // Get critical levels
