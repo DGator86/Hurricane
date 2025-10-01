@@ -5,6 +5,7 @@
 
 ## Overview
 Hurricane SPY is a sophisticated multi-timeframe prediction system for SPY options trading, featuring:
+- **Unusual Whales data pipeline** as the single live data source
 - **75% Accuracy Target** using ensemble machine learning models
 - **Black-Scholes Option Pricing** with complete Greeks (Delta, Gamma, Theta, Vega, Rho)
 - **0DTE Options Scanner** for scalping opportunities
@@ -101,9 +102,7 @@ interface OptionRecommendation {
 - `GET /api/enhanced/option-chain/SPY` - Full option chain with Greeks
 
 ### Market Data Sources
-1. **Polygon.io** (PRIMARY) - Real-time quotes, aggregates, technicals
-2. **Alpha Vantage** (FALLBACK) - Backup data source
-3. **Synthetic Data** (LAST RESORT) - Generated data for continuity
+1. **Unusual Whales** – live Hurricane predictions, options flow, and confidence metrics
 
 ## 🎨 User Guide
 
@@ -145,16 +144,18 @@ Shows historical performance:
 - **GitHub Actions** - CI/CD pipeline
 
 ### Configuration
-```json
-{
-  "name": "hurricane-spy",
-  "compatibility_date": "2024-01-01",
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "hurricane-production"
-  }]
-}
+
+Set the Unusual Whales credentials before running any Hurricane service:
+
+```bash
+export UNUSUAL_WHALES_API_TOKEN="<your-api-token>"
+# Optional overrides if your organization uses a proxy
+export UNUSUAL_WHALES_API_BASE="https://api.unusualwhales.com"
+export UNUSUAL_WHALES_PREDICT_PATH="/v2/hurricane/predict"
+export UNUSUAL_WHALES_ENHANCED_PATH="/v2/hurricane/predict/enhanced"
 ```
+
+The TypeScript API layer, prediction scripts, and backtesting harness all fail fast if the token is missing so production traffic never falls back to legacy providers.
 
 ## 📈 Performance Metrics
 

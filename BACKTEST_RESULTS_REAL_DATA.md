@@ -76,15 +76,10 @@ The system demonstrates extraordinary risk-reward ratios with real market data, 
 
 ## API Data Sources Used
 
-### Primary: Polygon.io
-- Successfully fetched aggregates for backtesting
-- Real-time quotes for live predictions
-- Technical indicators (RSI, MACD, SMA)
-
-### Fallback: Twelve Data
-- Provided complete 30-day historical data
-- Backup when Polygon rate limits hit
-- Consistent data quality
+### Primary: Unusual Whales
+- Hurricane predictions, bias, and confidence are fetched directly from the paid Unusual Whales feed
+- Options flow statistics and Kelly sizing originate from the same API payloads
+- No secondary data providers are queried in the production pipeline
 
 ## Backtesting Infrastructure
 
@@ -93,7 +88,7 @@ The system demonstrates extraordinary risk-reward ratios with real market data, 
 # Fetch real historical data
 python3 fetch_historical_spy.py 30
 
-# Generate predictions for historical dates
+# Generate Unusual Whales predictions for historical dates
 python3 generate_predictions.py 30
 
 # Run backtest with real data
@@ -102,7 +97,7 @@ python3 backtest_hurricane.py offline
 
 ### Files Generated
 - `spy_data.csv` - 30 days of real SPY OHLCV data
-- `predictions/*.json` - 31 prediction files
+- `predictions_unusual_whales/*.json` - 31 prediction files from Unusual Whales
 - `backtest_results/` - Complete analysis outputs
 
 ## Critical Insights

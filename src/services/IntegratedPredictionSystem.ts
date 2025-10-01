@@ -1,33 +1,45 @@
 /**
  * Integrated Hurricane SPY Prediction System
- * Combines all components for 75%+ accuracy target
+ * Unified around the Unusual Whales API as the single data source.
  */
 
-import { HurricaneFeatureExtractor, HurricaneFeatures } from './HurricaneFeatureExtractor'
-import { EnhancedPredictionModel, PredictionSignal } from './EnhancedPredictionModel'
-import { TechnicalIndicators, OHLCV } from './TechnicalIndicators'
-import { PolygonAPI } from './PolygonAPI'
-import { EnhancedMarketDataService } from '../market-data-enhanced'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
+import {
+  buildUnusualWhalesClient,
+  UnusualWhalesClient,
+  type ClientOptions
+} from './unusualWhales'
 
-export interface TimeframePrediction extends PredictionSignal {
-  features: Partial<HurricaneFeatures>
+export type TimeframeKey = '1m' | '5m' | '15m' | '1h' | '4h' | '1d'
+export type PredictionBias = 'bullish' | 'bearish' | 'neutral'
+export type PredictionDirection =
+  | 'STRONG_BUY'
+  | 'BUY'
+  | 'NEUTRAL'
+  | 'SELL'
+  | 'STRONG_SELL'
+
+export interface TimeframePrediction {
+  timeframe: TimeframeKey
+  direction: PredictionDirection
+  bias: PredictionBias
+  confidence: number
+  targetPrice: number
+  stopLoss: number
+  expectedMove: number // Percentage magnitude (e.g. 1.2 == 1.2%)
+  expectedReturn: number // Signed decimal (e.g. 0.012 == +1.2%)
+  riskReward: number
+  kellySize: number
+  reasons: string[]
+  features: Record<string, unknown>
   timestamp: number
 }
 
 export interface ComprehensivePrediction {
   timestamp: string
   currentPrice: number
-  predictions: {
-    '1m': TimeframePrediction
-    '5m': TimeframePrediction
-    '15m': TimeframePrediction
-    '1h': TimeframePrediction
-    '4h': TimeframePrediction
-    '1d': TimeframePrediction
-  }
+  predictions: Record<TimeframeKey, TimeframePrediction>
   overallConfidence: number
-  strongestSignal: string
+  strongestSignal: TimeframeKey
   marketRegime: string
   kellySizing: number
   criticalLevels: {
@@ -38,102 +50,94 @@ export interface ComprehensivePrediction {
   warnings: string[]
 }
 
+export type IntegratedSystemOptions = Partial<ClientOptions> & {
+  env?: Record<string, string | undefined>
+  client?: UnusualWhalesClient
+  symbol?: string
+}
+
+const TIMEFRAMES: TimeframeKey[] = ['1m', '5m', '15m', '1h', '4h', '1d']
+
 export class IntegratedPredictionSystem {
-  private featureExtractor: HurricaneFeatureExtractor
-  private predictionModel: EnhancedPredictionModel
-  private marketDataService: EnhancedMarketDataService
-  private polygonApi: PolygonAPI
-  private yahooFinance: YahooFinanceAPI
-  
-  constructor(polygonKey: string, twelveDataKey?: string) {
-    this.featureExtractor = new HurricaneFeatureExtractor(polygonKey)
-    this.predictionModel = new EnhancedPredictionModel()
-    this.marketDataService = new EnhancedMarketDataService(polygonKey, twelveDataKey)
-    this.polygonApi = new PolygonAPI(polygonKey)
-    this.yahooFinance = new YahooFinanceAPI()
+  private client: UnusualWhalesClient
+  private symbol: string
+
+  constructor(
+    _polygonApiKey?: string,
+    _twelveDataApiKey?: string,
+    options: IntegratedSystemOptions = {},
+  ) {
+    this.symbol = options.symbol ?? 'SPY'
+
+    if (options.client) {
+      this.client = options.client
+    } else {
+      const { env, client: _ignoredClient, symbol: _ignoredSymbol, ...clientOverrides } = options
+      const envSource =
+        env ??
+        (typeof process !== 'undefined'
+          ? (process.env as Record<string, string | undefined>)
+          : {})
+
+      this.client = buildUnusualWhalesClient(envSource, clientOverrides)
+    }
   }
-  
-  /**
-   * Generate comprehensive predictions using all available data
-   */
+
+  get configured(): boolean {
+    return this.client.enabled
+  }
+
   async generatePrediction(asofDate?: string): Promise<ComprehensivePrediction> {
-    console.log(`🚀 Generating comprehensive prediction ${asofDate ? `for ${asofDate}` : 'for current market'}`)
-    
-    // Fetch market data for all timeframes
-    const marketData = await this.fetchAllTimeframeData(asofDate)
-    
-    // Get current market status
-    const marketStatus = asofDate 
-      ? await this.marketDataService.getHistoricalMarketStatus(asofDate)
-      : await this.marketDataService.getMarketStatus()
-    
-    const currentPrice = marketStatus.spy.price
-    
-    // Extract features for each timeframe
-    const features1m = await this.featureExtractor.extractFeatures(
-      currentPrice,
-      marketData.candles1m,
-      marketData.candles5m,
-      marketData.candles15m,
-      marketData.candles1h,
-      marketData.candles4h,
-      marketData.candles1d
-    )
-    
-    // Generate predictions for each timeframe
-    const predictions: any = {}
-    const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d']
-    
-    for (const tf of timeframes) {
-      const signal = this.predictionModel.predict(features1m, tf)
-      const kellySize = this.predictionModel.calculateKellySize(
-        signal.confidence,
-        signal.expectedMove / 100
+    if (!this.configured) {
+      throw new Error(
+        'Unusual Whales credentials are not configured. Set UNUSUAL_WHALES_API_TOKEN.'
       )
-      
-      predictions[tf] = {
-        ...signal,
-        features: this.getKeyFeatures(features1m),
-        timestamp: Date.now(),
-        kellySize
+    }
+
+    const payload = await this.client.fetchEnhancedPrediction(
+      this.symbol,
+      asofDate
+    )
+
+    const currentPrice = this.extractPrice(payload)
+    const timeframePayload: Record<string, any> =
+      payload?.predictions ?? payload?.forecasts ?? {}
+
+    const predictions: Partial<Record<TimeframeKey, TimeframePrediction>> = {}
+    let strongest: TimeframeKey = '1m'
+    let highestConfidence = -1
+
+    for (const tf of TIMEFRAMES) {
+      const mapped = this.buildTimeframePrediction(
+        tf,
+        timeframePayload[tf] ?? {},
+        currentPrice,
+        payload
+      )
+      predictions[tf] = mapped
+      if (mapped.confidence > highestConfidence) {
+        strongest = tf
+        highestConfidence = mapped.confidence
       }
     }
-    
-    // Calculate overall confidence (weighted by timeframe importance)
-    const weights = { '1m': 1, '5m': 2, '15m': 2, '1h': 3, '4h': 2, '1d': 1 }
-    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0)
-    const overallConfidence = timeframes.reduce((sum, tf) => 
-      sum + predictions[tf].confidence * weights[tf], 0
-    ) / totalWeight
-    
-    // Find strongest signal
-    const strongestSignal = timeframes.reduce((best, tf) => 
-      predictions[tf].confidence > predictions[best].confidence ? tf : best
-    , '1m')
-    
-    // Determine market regime
-    const marketRegime = this.determineMarketRegime(features1m)
-    
-    // Calculate overall Kelly sizing
-    const kellySizing = this.predictionModel.calculateKellySize(
-      overallConfidence,
-      predictions[strongestSignal].expectedMove / 100
+
+    const strongestSignal =
+      (payload?.strongestSignal?.timeframe as TimeframeKey | undefined) ??
+      strongest
+    const overallConfidence = this.extractOverallConfidence(
+      payload,
+      predictions
     )
-    
-    // Get critical levels
-    const criticalLevels = {
-      support: [features1m.nearest_support, features1m.fib_382, features1m.bb_lower],
-      resistance: [features1m.nearest_resistance, features1m.fib_618, features1m.bb_upper],
-      vwap: features1m.vwap
-    }
-    
-    // Generate warnings
-    const warnings = this.generateWarnings(features1m, predictions)
-    
+    const kellySizing = this.extractOverallKelly(payload, predictions[strongestSignal]!)
+    const criticalLevels = this.extractCriticalLevels(payload, currentPrice)
+    const warnings = this.extractWarnings(payload, predictions)
+    const marketRegime = this.extractMarketRegime(payload)
+    const timestamp = this.extractTimestamp(payload)
+
     return {
-      timestamp: new Date().toISOString(),
+      timestamp,
       currentPrice,
-      predictions,
+      predictions: predictions as Record<TimeframeKey, TimeframePrediction>,
       overallConfidence,
       strongestSignal,
       marketRegime,
@@ -142,239 +146,423 @@ export class IntegratedPredictionSystem {
       warnings
     }
   }
-  
-  /**
-   * Fetch candle data for all timeframes
-   */
-  private async fetchAllTimeframeData(asofDate?: string): Promise<{
-    candles1m?: OHLCV[]
-    candles5m?: OHLCV[]
-    candles15m?: OHLCV[]
-    candles1h?: OHLCV[]
-    candles4h?: OHLCV[]
-    candles1d?: OHLCV[]
-  }> {
-    try {
-      // For historical data, we'll use daily candles
-      if (asofDate) {
-        const endDate = new Date(asofDate)
-        const startDate = new Date(endDate)
-        startDate.setDate(startDate.getDate() - 30)
-        
-        const dailyData = await this.polygonApi.getAggregates(
-          'SPY',
-          1,
-          'day',
-          startDate.toISOString().split('T')[0],
-          endDate.toISOString().split('T')[0]
-        ).catch(() => null)
-        
-        if (dailyData) {
-          const candles1d = this.convertToOHLCV(dailyData.results)
-          
-          return {
-            candles1d,
-            candles4h: candles1d,  // Use daily as proxy for historical
-            candles1h: candles1d,
-            candles15m: candles1d,
-            candles5m: candles1d,
-            candles1m: candles1d
-          }
-        }
-      }
-      
-      // For live data, try Yahoo Finance FIRST for intraday data
-      console.log('🎯 Attempting to fetch intraday data from Yahoo Finance...')
-      
-      try {
-        const yahooData = await this.yahooFinance.getAllTimeframeData('SPY')
-        
-        if (yahooData.candles1m && yahooData.candles1m.length > 0) {
-          console.log('✅ Successfully fetched Yahoo Finance intraday data!')
-          console.log(`  • 1m candles: ${yahooData.candles1m.length}`)
-          console.log(`  • 5m candles: ${yahooData.candles5m.length}`)
-          console.log(`  • 15m candles: ${yahooData.candles15m.length}`)
-          console.log(`  • 1h candles: ${yahooData.candles1h.length}`)
-          console.log(`  • 1d candles: ${yahooData.candles1d.length}`)
-          
-          // Also fetch options data for better predictions
-          const optionsChain = await this.yahooFinance.getOptionsChain('SPY')
-          if (optionsChain) {
-            console.log(`  • Options: ${optionsChain.calls.length} calls, ${optionsChain.puts.length} puts`)
-          }
-          
-          return {
-            candles1m: yahooData.candles1m,
-            candles5m: yahooData.candles5m,
-            candles15m: yahooData.candles15m,
-            candles1h: yahooData.candles1h,
-            candles4h: yahooData.candles1h,  // Use 1h as proxy for 4h
-            candles1d: yahooData.candles1d
-          }
-        }
-      } catch (yahooError) {
-        console.warn('⚠️ Yahoo Finance failed, falling back to Polygon...', yahooError)
-      }
-      
-      // Fallback to Polygon if Yahoo fails
-      const now = new Date()
-      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      
-      // Fetch what we can from Polygon
-      const [data1h, data1d] = await Promise.all([
-        this.polygonApi.getAggregates('SPY', 1, 'hour', 
-          dayAgo.toISOString().split('T')[0],
-          now.toISOString().split('T')[0]
-        ).catch(() => null),
-        
-        this.polygonApi.getAggregates('SPY', 1, 'day',
-          monthAgo.toISOString().split('T')[0],
-          now.toISOString().split('T')[0]
-        ).catch(() => null)
-      ])
-      
-      return {
-        candles1m: data1h ? this.convertToOHLCV(data1h.results).slice(-60) : undefined,
-        candles5m: data1h ? this.convertToOHLCV(data1h.results).slice(-12) : undefined,
-        candles15m: data1h ? this.convertToOHLCV(data1h.results).slice(-4) : undefined,
-        candles1h: data1h ? this.convertToOHLCV(data1h.results) : undefined,
-        candles4h: data1d ? this.convertToOHLCV(data1d.results).slice(-30) : undefined,
-        candles1d: data1d ? this.convertToOHLCV(data1d.results) : undefined
-      }
-    } catch (error) {
-      console.warn('Error fetching timeframe data:', error)
-      return {}
+
+  private extractTimestamp(payload: any): string {
+    const raw = payload?.timestamp
+    if (typeof raw === 'string') {
+      return raw
     }
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return new Date(raw).toISOString()
+    }
+    return new Date().toISOString()
   }
-  
-  /**
-   * Convert Polygon data to OHLCV format
-   */
-  private convertToOHLCV(data: any[]): OHLCV[] {
-    if (!data || !Array.isArray(data)) return []
-    
-    return data.map(bar => ({
-      open: bar.o,
-      high: bar.h,
-      low: bar.l,
-      close: bar.c,
-      volume: bar.v,
-      timestamp: bar.t
-    }))
+
+  private extractPrice(payload: any): number {
+    const candidates = [
+      payload?.currentPrice,
+      payload?.spot,
+      payload?.price,
+      payload?.underlyingPrice,
+      payload?.lastPrice
+    ]
+
+    for (const value of candidates) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value
+      }
+    }
+
+    return 0
   }
-  
-  /**
-   * Get key features for display
-   */
-  private getKeyFeatures(features: HurricaneFeatures): Partial<HurricaneFeatures> {
+
+  private buildTimeframePrediction(
+    timeframe: TimeframeKey,
+    raw: any,
+    currentPrice: number,
+    payload: any
+  ): TimeframePrediction {
+    const price =
+      typeof raw?.currentPrice === 'number' && Number.isFinite(raw.currentPrice)
+        ? raw.currentPrice
+        : currentPrice
+
+    const confidence = this.extractConfidence(raw)
+    const bias = this.deriveBias(raw)
+    const direction = this.deriveDirection(bias, confidence)
+
+    const targetPrice = this.extractTargetPrice(raw, price, bias)
+    const stopLoss = this.extractStopLoss(raw, price, bias)
+    const expectedMove = this.computeExpectedMove(price, targetPrice)
+    const expectedReturn =
+      expectedMove === 0
+        ? 0
+        : (expectedMove / 100) * (bias === 'bearish' ? -1 : bias === 'bullish' ? 1 : 0)
+    const riskReward = this.computeRiskReward(price, targetPrice, stopLoss, bias)
+    const kellySize = this.estimateKellySize(
+      raw,
+      confidence,
+      riskReward,
+      payload?.kellySizing ?? payload?.kelly_size
+    )
+    const reasons = this.extractReasons(raw, bias)
+    const features = this.extractFeatures(raw)
+
+    const timestampValue =
+      typeof raw?.timestamp === 'string'
+        ? Date.parse(raw.timestamp)
+        : typeof raw?.timestamp === 'number'
+        ? raw.timestamp
+        : undefined
+
     return {
-      rsi14: features.rsi14,
-      macd: features.macd,
-      macd_signal: features.macd_signal,
-      macd_crossover: features.macd_crossover,
-      adx14: features.adx14,
-      bb_percentB: features.bb_percentB,
-      volume_ratio: features.volume_ratio,
-      vwap_distance: features.vwap_distance,
-      momentum_score: features.momentum_score,
-      trend_regime: features.trend_regime,
-      volatility_regime: features.volatility_regime,
-      gex: features.gex,
-      dix: features.dix,
-      put_call_ratio: features.put_call_ratio
+      timeframe,
+      direction,
+      bias,
+      confidence,
+      targetPrice,
+      stopLoss,
+      expectedMove,
+      expectedReturn,
+      riskReward,
+      kellySize,
+      reasons,
+      features,
+      timestamp: timestampValue && Number.isFinite(timestampValue)
+        ? timestampValue
+        : Date.now()
     }
   }
-  
-  /**
-   * Determine overall market regime
-   */
-  private determineMarketRegime(features: HurricaneFeatures): string {
-    // Combine multiple regime indicators
-    const regimes = []
-    
-    // Trend regime
-    if (features.trend_regime === 'strong_up') {
-      regimes.push('STRONG_BULLISH_TREND')
-    } else if (features.trend_regime === 'strong_down') {
-      regimes.push('STRONG_BEARISH_TREND')
-    } else if (features.trending) {
-      regimes.push('TRENDING')
-    } else {
-      regimes.push('RANGING')
+
+  private extractConfidence(raw: any): number {
+    const candidates = [raw?.confidence, raw?.score, raw?.probability, raw?.strength]
+    for (const value of candidates) {
+      if (typeof value === 'number' && !Number.isNaN(value)) {
+        if (value > 1) {
+          return Math.min(1, value / 100)
+        }
+        if (value >= 0) {
+          return Math.max(0, Math.min(1, value))
+        }
+      }
     }
-    
-    // Volatility regime
-    if (features.volatility_regime === 'extreme') {
-      regimes.push('EXTREME_VOL')
-    } else if (features.volatility_regime === 'high') {
-      regimes.push('HIGH_VOL')
-    }
-    
-    // Volume regime
-    if (features.volume_regime === 'high') {
-      regimes.push('HIGH_VOLUME')
-    }
-    
-    // Options flow
-    if (features.gex < -1e9) {
-      regimes.push('NEGATIVE_GEX')
-    }
-    
-    return regimes.join(' | ')
+    return 0.5
   }
-  
-  /**
-   * Generate warnings based on market conditions
-   */
-  private generateWarnings(features: HurricaneFeatures, predictions: any): string[] {
-    const warnings = []
-    
-    // Extreme volatility warning
-    if (features.volatility_regime === 'extreme' || features.vix > 30) {
-      warnings.push('⚠️ Extreme volatility detected - reduce position size')
+
+  private deriveBias(raw: any): PredictionBias {
+    const hint =
+      (typeof raw?.bias === 'string' && raw.bias) ||
+      (typeof raw?.direction === 'string' && raw.direction) ||
+      (typeof raw?.side === 'string' && raw.side) ||
+      (typeof raw?.signal === 'string' && raw.signal) ||
+      (typeof raw?.regime === 'string' && raw.regime) ||
+      ''
+
+    const normalized = hint.toUpperCase()
+    if (
+      normalized.includes('BULL') ||
+      normalized.includes('CALL') ||
+      normalized.includes('UP') ||
+      normalized.includes('LONG')
+    ) {
+      return 'bullish'
     }
-    
-    // Divergence warning
-    const bullishCount = Object.values(predictions).filter((p: any) => 
-      p.direction === 'BUY' || p.direction === 'STRONG_BUY'
-    ).length
-    
-    const bearishCount = Object.values(predictions).filter((p: any) => 
-      p.direction === 'SELL' || p.direction === 'STRONG_SELL'
-    ).length
-    
-    if (bullishCount > 0 && bearishCount > 0 && Math.abs(bullishCount - bearishCount) <= 1) {
-      warnings.push('⚠️ Mixed signals across timeframes - wait for clarity')
+
+    if (
+      normalized.includes('BEAR') ||
+      normalized.includes('PUT') ||
+      normalized.includes('DOWN') ||
+      normalized.includes('SHORT') ||
+      normalized.includes('SELL')
+    ) {
+      return 'bearish'
     }
-    
-    // Low volume warning
-    if (features.volume_regime === 'low') {
-      warnings.push('⚠️ Low volume - signals may be less reliable')
+
+    return 'neutral'
+  }
+
+  private deriveDirection(
+    bias: PredictionBias,
+    confidence: number
+  ): PredictionDirection {
+    if (bias === 'bullish') {
+      return confidence >= 0.75 ? 'STRONG_BUY' : 'BUY'
     }
-    
-    // Overbought/Oversold warning
-    if (features.rsi14 > 80) {
-      warnings.push('⚠️ Extremely overbought (RSI > 80)')
-    } else if (features.rsi14 < 20) {
-      warnings.push('⚠️ Extremely oversold (RSI < 20)')
+    if (bias === 'bearish') {
+      return confidence >= 0.75 ? 'STRONG_SELL' : 'SELL'
     }
-    
-    // Options flow warning
-    if (features.put_call_ratio > 1.5) {
-      warnings.push('⚠️ Extreme put buying detected')
-    } else if (features.put_call_ratio < 0.4) {
-      warnings.push('⚠️ Extreme call buying detected')
+    return 'NEUTRAL'
+  }
+
+  private extractTargetPrice(
+    raw: any,
+    price: number,
+    bias: PredictionBias
+  ): number {
+    const candidates = [
+      raw?.target,
+      raw?.targetPrice,
+      raw?.upperBound,
+      raw?.cone_upper,
+      raw?.priceTarget,
+      raw?.takeProfit
+    ]
+
+    for (const value of candidates) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value
+      }
     }
-    
-    // Support/Resistance warning
-    if (Math.abs(features.resistance_distance) < 0.002) {
-      warnings.push('⚠️ At major resistance level')
-    } else if (Math.abs(features.support_distance) < 0.002) {
-      warnings.push('⚠️ At major support level')
+
+    if (!Number.isFinite(price) || price <= 0) {
+      return 0
     }
-    
+
+    const delta = price * 0.01
+    if (bias === 'bullish') {
+      return price + delta
+    }
+    if (bias === 'bearish') {
+      return price - delta
+    }
+    return price
+  }
+
+  private extractStopLoss(
+    raw: any,
+    price: number,
+    bias: PredictionBias
+  ): number {
+    const candidates = [
+      raw?.stopLoss,
+      raw?.stop_loss,
+      raw?.lowerBound,
+      raw?.cone_lower,
+      raw?.stop,
+      raw?.stop_price
+    ]
+
+    for (const value of candidates) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value
+      }
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      return 0
+    }
+
+    const delta = price * 0.005
+    if (bias === 'bullish') {
+      return price - delta
+    }
+    if (bias === 'bearish') {
+      return price + delta
+    }
+    return price
+  }
+
+  private computeExpectedMove(price: number, target: number): number {
+    if (!Number.isFinite(price) || price === 0 || !Number.isFinite(target)) {
+      return 0
+    }
+
+    return Math.abs((target - price) / price) * 100
+  }
+
+  private computeRiskReward(
+    price: number,
+    target: number,
+    stop: number,
+    bias: PredictionBias
+  ): number {
+    if (!Number.isFinite(price) || !Number.isFinite(target) || !Number.isFinite(stop)) {
+      return 1
+    }
+
+    const reward = Math.abs(target - price)
+    const risk = Math.abs(price - stop)
+
+    if (risk === 0) {
+      return 1
+    }
+
+    if (bias === 'neutral') {
+      return 1
+    }
+
+    return Math.max(0.1, reward / risk)
+  }
+
+  private estimateKellySize(
+    raw: any,
+    confidence: number,
+    riskReward: number,
+    overallKelly?: number
+  ): number {
+    if (typeof raw?.kellySize === 'number' && Number.isFinite(raw.kellySize)) {
+      return raw.kellySize
+    }
+
+    const base =
+      typeof overallKelly === 'number' && Number.isFinite(overallKelly)
+        ? overallKelly
+        : 0.1
+
+    const kelly = base * confidence * Math.max(0.5, Math.min(2, riskReward))
+    return Math.min(0.25, Math.max(0, kelly))
+  }
+
+  private extractReasons(raw: any, bias: PredictionBias): string[] {
+    const reasons: string[] = []
+    if (Array.isArray(raw?.reasons)) {
+      reasons.push(...raw.reasons.map((r: any) => String(r)))
+    } else if (typeof raw?.reason === 'string') {
+      reasons.push(raw.reason)
+    } else if (typeof raw?.notes === 'string') {
+      reasons.push(raw.notes)
+    }
+
+    if (reasons.length === 0 && bias !== 'neutral') {
+      reasons.push(
+        bias === 'bullish' ? 'Unusual Whales bullish signal' : 'Unusual Whales bearish signal'
+      )
+    }
+
+    return reasons
+  }
+
+  private extractFeatures(raw: any): Record<string, unknown> {
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      if (raw.features && typeof raw.features === 'object') {
+        return { ...raw.features }
+      }
+
+      const indicators: Record<string, unknown> = {}
+      const candidateKeys = [
+        'gex',
+        'dix',
+        'putCallRatio',
+        'vanna',
+        'momentumScore',
+        'volatilityScore',
+        'gammaFlip',
+        'vix',
+        'volume'
+      ]
+
+      for (const key of candidateKeys) {
+        const value = raw[key]
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          indicators[key] = value
+        }
+      }
+
+      if (Object.keys(indicators).length > 0) {
+        return indicators
+      }
+    }
+
+    return {}
+  }
+
+  private extractOverallConfidence(
+    payload: any,
+    predictions: Partial<Record<TimeframeKey, TimeframePrediction>>
+  ): number {
+    const payloadConfidence = payload?.confidence?.overall
+    if (typeof payloadConfidence === 'number' && !Number.isNaN(payloadConfidence)) {
+      return Math.max(0, Math.min(1, payloadConfidence))
+    }
+
+    const confidences = Object.values(predictions)
+      .filter((pred): pred is TimeframePrediction => Boolean(pred))
+      .map(pred => pred.confidence)
+
+    if (confidences.length === 0) {
+      return 0.5
+    }
+
+    const avg = confidences.reduce((sum, value) => sum + value, 0) / confidences.length
+    return Math.max(0, Math.min(1, avg))
+  }
+
+  private extractOverallKelly(
+    payload: any,
+    strongestPrediction: TimeframePrediction
+  ): number {
+    const payloadKelly = payload?.kellySizing ?? payload?.kelly_size
+    if (typeof payloadKelly === 'number' && Number.isFinite(payloadKelly)) {
+      return Math.max(0, Math.min(0.5, payloadKelly))
+    }
+
+    return Math.min(
+      0.25,
+      Math.max(0, strongestPrediction.confidence * strongestPrediction.riskReward * 0.1)
+    )
+  }
+
+  private extractCriticalLevels(payload: any, price: number) {
+    const defaults = {
+      support: price ? [price * 0.995, price * 0.99] : [],
+      resistance: price ? [price * 1.005, price * 1.01] : [],
+      vwap: price || 0
+    }
+
+    if (!payload?.criticalLevels && !payload?.critical_levels) {
+      return defaults
+    }
+
+    const levels = payload?.criticalLevels ?? payload?.critical_levels ?? {}
+    return {
+      support: Array.isArray(levels.support) ? levels.support : defaults.support,
+      resistance: Array.isArray(levels.resistance) ? levels.resistance : defaults.resistance,
+      vwap:
+        typeof levels.vwap === 'number' && Number.isFinite(levels.vwap)
+          ? levels.vwap
+          : defaults.vwap
+    }
+  }
+
+  private extractWarnings(
+    payload: any,
+    predictions: Partial<Record<TimeframeKey, TimeframePrediction>>
+  ): string[] {
+    const warnings: string[] = []
+
+    if (Array.isArray(payload?.warnings)) {
+      warnings.push(...payload.warnings.map((w: any) => String(w)))
+    }
+
+    const lowConfidence = Object.values(predictions)
+      .filter((pred): pred is TimeframePrediction => Boolean(pred))
+      .filter(pred => pred.confidence < 0.4)
+
+    if (lowConfidence.length > 0) {
+      warnings.push(
+        `Low confidence on ${lowConfidence.length} timeframe${
+          lowConfidence.length === 1 ? '' : 's'
+        }`
+      )
+    }
+
     return warnings
+  }
+
+  private extractMarketRegime(payload: any): string {
+    const candidates = [
+      payload?.regime?.state,
+      payload?.regime,
+      payload?.marketRegime,
+      payload?.market_regime
+    ]
+
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value
+      }
+    }
+
+    return 'UNKNOWN'
   }
 }
