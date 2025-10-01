@@ -1,0 +1,674 @@
+name: Hurricane Codex
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */4 * * 1-5"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  codex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: |
+          npm ci || npm i
+
+      - name: Ensure automation files
+        run: |
+          node -e "const fs=require('fs');const path=require('path');const raw=String.raw;const ensure=(p,c)=>{if(!fs.existsSync(p)){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,c);}};
+          ensure('docs/Hurricane-Codex.md', raw`# Hurricane Codex
+
+The Hurricane Codex documents the standing methodology that powers the Hurricane
+signals. It is intentionally self-contained so that the automation bot can
+hydrate a new repository, pass schema validation, and communicate the system to
+reviewers without additional tribal knowledge.
+
+## Objectives
+
+1. Publish directional levels, bias, and speed each trading day.
+2. Provide deterministic health scoring that reflects signal coverage and
+   freshness.
+3. Capture model assumptions so that updates can be audited and replayed.
+
+## Signal Layers
+
+### Gamma Exposure Levels
+
+We extract candidate support and resistance zones from spot gamma density,
+changes in gamma exposure, and dark-pool liquidity shelves. Each candidate level
+is scored between \`0\` and \`1\` and labelled as \`support\` or \`resistance\`:
+
+- **Gamma Density:** Magnitude of open interest weighted gamma around the
+  strike.
+- **Gamma Gradient:** Slope of gamma exposure between neighbouring strikes.
+- **Liquidity Shelf:** Dark-pool notional and displayed volume resting at the
+  strike.
+
+The composite score averages the normalized features with a minor boost for
+levels that agree with recent realized pivots.
+
+### Direction Bias
+
+Bias is a discrete signal in \`{ short, neutral, long }\` backed by three inputs:
+
+1. **Gamma Sign:** Aggregate index gamma sign derived from the sum of strike
+   gamma exposures.
+2. **DIX Trend:** Five-day change in the Dark Index to capture passive liquidity
+   appetite.
+3. **Price Momentum:** A smoothed rate-of-change of spot and the distance to the
+   strongest level.
+
+The confidence is reported as a value in \`[0, 1]\`.
+
+### Speed Regime
+
+Speed qualifies the expected tape velocity using realized-to-implied volatility
+ratios, VIX percentile, and aggregate dark-pool volume:
+
+- \`calm\`: realized volatility well below implied and shrinking liquidity.
+- \`normal\`: mixed readings.
+- \`breezy\`: realized volatility expanding with supportive liquidity.
+- \`storm\`: realized volatility and VIX spiking together.
+
+Each regime includes a bullet list of the dominant drivers at the time of
+publication.
+
+## Health Score
+
+A composite health score on a \`0-100\` scale summarizes the state of the repo.
+The score begins at \`50\` and adjusts using:
+
+- Level coverage and average strength (\`+/- 20\`).
+- Bias confidence centered at \`50%\` (\`+/- 25\`).
+- Speed regime penalties for \`calm (-5)\` and \`storm (-10)\`.
+
+Scores above \`70\` indicate healthy coverage; \`55-70\` recommends investigation;
+values below \`55\` require action.
+
+## Automation Contract
+
+The automation job is expected to:
+
+1. Install Node dependencies and TypeScript helpers.
+2. Generate or refresh methodology artefacts when absent.
+3. Run \`automation/hurricane_sync/reportStatus.ts\` to emit a status markdown
+   document.
+4. Open or update a pull request targeting \`main\` with the refreshed artefacts
+   and status report.
+
+## Extending the Codex
+
+- Update the schema files under \`specs/\` when new fields are added.
+- Keep the assistant prompt in \`assistants/\` aligned with reviewer expectations.
+- Extend the pipeline modules under \`src/hurricane/\` to integrate new data
+  sources.
+
+All changes must run through the automation workflow to ensure the generated
+status comment matches the repository state.
+`);
+          ensure('docs/Methodology-Quickstart.md', raw`# Hurricane Methodology Quickstart
+
+This quickstart summarizes the core files used by the automation workflow.
+
+## Daily Workflow
+
+1. Checkout the repository and install dependencies with \`npm ci\`.
+2. Run \`npx tsx automation/hurricane_sync/reportStatus.ts\` to produce the status
+   snapshot. The command writes \`hurricane-status.md\` and prints the report to
+   stdout.
+3. Review the generated markdown for health score context and supporting data.
+4. Push the updated artefacts or allow the scheduled GitHub Action to open a PR
+   on your behalf.
+
+## Project Structure
+
+- \`docs/\` — Methodology references and onboarding guides.
+- \`specs/\` — JSON/YAML schemas used for validation checks.
+- \`assistants/\` — Prompt and metadata for the Codex reviewer bot.
+- \`src/hurricane/\` — TypeScript implementations of the public Hurricane API.
+- \`automation/hurricane_sync/\` — Scripts invoked by CI to score the repo.
+
+## Replacing Mock Data
+
+\`reportStatus.ts\` uses a mock \`runPaper\` invocation so the workflow succeeds
+before real data is wired up. Update the import to use
+\`src/hurricane/pipeline/runPaper.ts\` once the production runner is available.
+When invoking manually with another runner, ensure ES modules are enabled. The
+\`tsx\` binary used by CI resolves the TypeScript entrypoint automatically.
+
+## Validation
+
+The schema files provide machine-readable expectations for Hurricane payloads.
+Use them when building tests or ingest pipelines to ensure downstream systems
+stay in sync.
+`);
+          ensure('specs/methodology.schema.yaml', raw`$schema: "https://json-schema.org/draft/2020-12/schema"
+title: HurricaneMethodology
+description: >-
+  Canonical schema for the Hurricane signal payload returned by
+  src/hurricane/pipeline/runPaper.ts. The schema is kept intentionally small so
+  that validation can run during CI without data backfills.
+type: object
+required:
+  - generatedAt
+  - levels
+  - bias
+  - speed
+  - diagnostics
+properties:
+  generatedAt:
+    type: string
+    format: date-time
+  levels:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [price, kind, score, sources]
+      properties:
+        price:
+          type: number
+        kind:
+          enum: [support, resistance]
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        sources:
+          type: array
+          items:
+            type: string
+  bias:
+    type: object
+    required: [value, confidence, evidence]
+    properties:
+      value:
+        type: integer
+        enum: [-1, 0, 1]
+      confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+      evidence:
+        type: array
+        items:
+          type: string
+  speed:
+    type: object
+    required: [label, drivers]
+    properties:
+      label:
+        type: string
+        enum: [calm, normal, breezy, storm]
+      drivers:
+        type: array
+        items:
+          type: string
+  diagnostics:
+    type: object
+    required: [gamma_sign, dix_trend, vol_regime]
+    properties:
+      gamma_sign:
+        type: string
+        enum: [short, long, mixed]
+      dix_trend:
+        type: string
+        enum: [up, down, flat]
+      vol_regime:
+        type: string
+        enum: [low, mid, high]
+additionalProperties: false
+`);
+          ensure('specs/tools.schema.json', raw`{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HurricaneTools",
+  "type": "object",
+  "required": [
+    "workflows",
+    "scripts"
+  ],
+  "properties": {
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "description"],
+        "properties": {
+          "command": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+`);
+          ensure('assistants/hurricane-codex.system.txt', raw`You are Hurricane Codex, a repository automation assistant. Your role is to:
+
+1. Summarize Hurricane signal updates for reviewers.
+2. Ensure generated artefacts satisfy the schemas in \`specs/\`.
+3. Provide actionable feedback on methodology or data gaps.
+
+Always respond with concise paragraphs followed by bullet lists of risks or open
+questions. Reject requests to trade or provide individualized investment
+advice.
+`);
+          ensure('assistants/hurricane-codex.assistant.json', raw`{
+  "name": "Hurricane Codex",
+  "description": "Reviews Hurricane methodology updates and reports repository health.",
+  "model": "gpt-4.1-mini",
+  "default_conversation": {
+    "system_prompt": "./assistants/hurricane-codex.system.txt"
+  },
+  "capabilities": {
+    "markdown": true,
+    "tables": true,
+    "math": false
+  }
+}
+`);
+          ensure('src/hurricane/pipeline/types.ts', raw`export type LevelKind = 'support' | 'resistance';
+
+export interface HurricaneLevel {
+  price: number;
+  kind: LevelKind;
+  score: number;
+  sources: string[];
+}
+
+export interface DirectionBias {
+  value: -1 | 0 | 1;
+  confidence: number;
+  evidence: string[];
+}
+
+export type SpeedLabel = 'calm' | 'normal' | 'breezy' | 'storm';
+
+export interface SpeedSignal {
+  label: SpeedLabel;
+  drivers: string[];
+}
+
+export interface Diagnostics {
+  gamma_sign: 'short' | 'long' | 'mixed';
+  dix_trend: 'up' | 'down' | 'flat';
+  vol_regime: 'low' | 'mid' | 'high';
+}
+
+export interface HurricaneSignal {
+  generatedAt: string;
+  levels: HurricaneLevel[];
+  bias: DirectionBias;
+  speed: SpeedSignal;
+  diagnostics: Diagnostics;
+}
+
+export interface LevelCandidate {
+  price: number;
+  gammaDensity: number;
+  gammaGradient: number;
+  liquidityShelf: number;
+  recentPivotAgreement: number;
+}
+
+export interface PipelineContext {
+  spot: number;
+  candidates: LevelCandidate[];
+  dixSeries: number[];
+  gammaSeries: number[];
+  realizedVolSeries: number[];
+  impliedVol: number;
+  darkPoolVolume: number;
+}
+
+export interface PipelineOptions {
+  asOf?: string;
+  overrides?: Partial<PipelineContext>;
+}
+`);
+          ensure('src/hurricane/gex/gexLevels.ts', raw`import { HurricaneLevel, LevelCandidate, LevelKind, PipelineContext } from '../pipeline/types.js';
+
+function normalise(value: number, min: number, max: number): number {
+  if (max === min) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, (value - min) / (max - min)));
+}
+
+function classifyKind(candidate: LevelCandidate, spot: number): LevelKind {
+  if (candidate.price === spot) {
+    return candidate.gammaGradient >= 0 ? 'support' : 'resistance';
+  }
+  return candidate.price < spot ? 'support' : 'resistance';
+}
+
+export function computeGexLevels(context: PipelineContext): HurricaneLevel[] {
+  const gammaDensityValues = context.candidates.map((c) => c.gammaDensity);
+  const gammaGradientValues = context.candidates.map((c) => c.gammaGradient);
+  const liquidityValues = context.candidates.map((c) => c.liquidityShelf);
+  const pivotValues = context.candidates.map((c) => c.recentPivotAgreement);
+
+  const densityMin = Math.min(...gammaDensityValues, 0);
+  const densityMax = Math.max(...gammaDensityValues, 1);
+  const gradientMin = Math.min(...gammaGradientValues, -1);
+  const gradientMax = Math.max(...gammaGradientValues, 1);
+  const liquidityMin = Math.min(...liquidityValues, 0);
+  const liquidityMax = Math.max(...liquidityValues, 1);
+  const pivotMin = Math.min(...pivotValues, 0);
+  const pivotMax = Math.max(...pivotValues, 1);
+
+  return context.candidates
+    .map((candidate) => {
+      const densityScore = normalise(candidate.gammaDensity, densityMin, densityMax);
+      const gradientScore = normalise(Math.abs(candidate.gammaGradient), Math.abs(gradientMin), Math.abs(gradientMax));
+      const liquidityScore = normalise(candidate.liquidityShelf, liquidityMin, liquidityMax);
+      const pivotScore = normalise(candidate.recentPivotAgreement, pivotMin, pivotMax);
+
+      const score = Number(((densityScore * 0.35)
+        + (gradientScore * 0.25)
+        + (liquidityScore * 0.25)
+        + (pivotScore * 0.15)).toFixed(4));
+
+      const sources = ['gex_density'];
+      if (Math.abs(candidate.gammaGradient) > 0.1) {
+        sources.push('gex_gradient');
+      }
+      if (candidate.liquidityShelf > liquidityMin) {
+        sources.push('dark_pool');
+      }
+      if (candidate.recentPivotAgreement > 0.2) {
+        sources.push('price_action');
+      }
+
+      return {
+        price: Number(candidate.price.toFixed(2)),
+        kind: classifyKind(candidate, context.spot),
+        score,
+        sources,
+      } satisfies HurricaneLevel;
+    })
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 6);
+}
+`);
+          ensure('src/hurricane/bias/directionBias.ts', raw`import { DirectionBias, HurricaneLevel, PipelineContext } from '../pipeline/types.js';
+
+function computeGammaSlope(series: number[]): number {
+  if (series.length < 2) {
+    return 0;
+  }
+  const window = series.slice(-5);
+  const first = window[0];
+  const last = window[window.length - 1];
+  return last - first;
+}
+
+function computeDixTrend(series: number[]): number {
+  if (series.length < 2) {
+    return 0;
+  }
+  const window = series.slice(-5);
+  let slope = 0;
+  for (let i = 1; i < window.length; i += 1) {
+    slope += window[i] - window[i - 1];
+  }
+  return slope / Math.max(window.length - 1, 1);
+}
+
+export function computeDirectionBias(context: PipelineContext, levels: HurricaneLevel[]): DirectionBias {
+  const gammaSlope = computeGammaSlope(context.gammaSeries);
+  const dixTrend = computeDixTrend(context.dixSeries);
+  const proximityAdjustment = (() => {
+    if (!levels.length) {
+      return 0;
+    }
+    const nearest = levels.reduce((prev, level) => {
+      const prevDist = Math.abs(prev.price - context.spot);
+      const dist = Math.abs(level.price - context.spot);
+      return dist < prevDist ? level : prev;
+    });
+    return nearest.kind === 'support' ? 0.1 : -0.1;
+  })();
+
+  const rawBias = gammaSlope + (dixTrend * 2) + proximityAdjustment;
+  const value: -1 | 0 | 1 = rawBias > 0.2 ? 1 : rawBias < -0.2 ? -1 : 0;
+  const confidence = Math.min(1, Math.max(0, 0.5 + (Math.abs(rawBias) * 2)));
+
+  const evidence: string[] = [];
+  evidence.push(`gamma_slope:${gammaSlope.toFixed(2)}`);
+  evidence.push(`dix_trend:${dixTrend.toFixed(2)}`);
+  evidence.push(`level_context:${proximityAdjustment >= 0 ? 'support' : 'resistance'}`);
+
+  return {
+    value,
+    confidence: Number(confidence.toFixed(2)),
+    evidence,
+  };
+}
+`);
+          ensure('src/hurricane/speed/speedModel.ts', raw`import { PipelineContext, SpeedSignal } from '../pipeline/types.js';
+
+function realisedVolatility(realised: number[]): number {
+  if (!realised.length) {
+    return 0;
+  }
+  return realised.slice(-10).reduce((acc, value) => acc + value, 0) / Math.min(realised.length, 10);
+}
+
+export function computeSpeedSignal(context: PipelineContext): SpeedSignal {
+  const realised = realisedVolatility(context.realizedVolSeries);
+  const ratio = context.impliedVol === 0 ? 0 : realised / context.impliedVol;
+  const drivers: string[] = [];
+  drivers.push(`rv:${realised.toFixed(2)}`);
+  drivers.push(`iv:${context.impliedVol.toFixed(2)}`);
+  drivers.push(`ratio:${ratio.toFixed(2)}`);
+  drivers.push(`dvol:${(context.darkPoolVolume / 1_000_000_000).toFixed(2)}B`);
+
+  let label: SpeedSignal['label'] = 'normal';
+  if (ratio < 0.8 && context.darkPoolVolume < 5_000_000_000) {
+    label = 'calm';
+  } else if (ratio >= 1.2 && context.impliedVol > 20) {
+    label = 'storm';
+  } else if (ratio >= 1 && context.darkPoolVolume >= 8_000_000_000) {
+    label = 'breezy';
+  }
+
+  return {
+    label,
+    drivers,
+  };
+}
+`);
+          ensure('src/hurricane/pipeline/runPaper.ts', raw`import { computeDirectionBias } from '../bias/directionBias.js';
+import { computeGexLevels } from '../gex/gexLevels.js';
+import { computeSpeedSignal } from '../speed/speedModel.js';
+import {
+  Diagnostics,
+  HurricaneSignal,
+  PipelineContext,
+  PipelineOptions,
+} from './types.js';
+
+function defaultContext(): PipelineContext {
+  const spot = 438.52;
+  return {
+    spot,
+    candidates: [
+      { price: 432, gammaDensity: 1.8, gammaGradient: 0.3, liquidityShelf: 1.1, recentPivotAgreement: 0.6 },
+      { price: 435, gammaDensity: 2.1, gammaGradient: 0.1, liquidityShelf: 0.9, recentPivotAgreement: 0.7 },
+      { price: 440, gammaDensity: 1.6, gammaGradient: -0.4, liquidityShelf: 1.4, recentPivotAgreement: 0.4 },
+      { price: 444, gammaDensity: 1.2, gammaGradient: -0.6, liquidityShelf: 0.8, recentPivotAgreement: 0.2 },
+    ],
+    dixSeries: [44.5, 45.2, 45.9, 46.3, 46.8],
+    gammaSeries: [-1.2, -1.05, -0.92, -0.85, -0.74],
+    realizedVolSeries: [12.1, 11.8, 12.4, 13.6, 14.2, 13.9, 13.1],
+    impliedVol: 17.8,
+    darkPoolVolume: 9_200_000_000,
+  };
+}
+
+function deriveDiagnostics(context: PipelineContext, biasValue: -1 | 0 | 1): Diagnostics {
+  const gammaSign = context.gammaSeries[context.gammaSeries.length - 1];
+  const diagnostics: Diagnostics = {
+    gamma_sign: gammaSign < -0.2 ? 'short' : gammaSign > 0.2 ? 'long' : 'mixed',
+    dix_trend: (() => {
+      const diffs = context.dixSeries.slice(1).map((value, index) => value - context.dixSeries[index]);
+      const avg = diffs.reduce((acc, value) => acc + value, 0) / Math.max(diffs.length, 1);
+      if (avg > 0.05) return 'up';
+      if (avg < -0.05) return 'down';
+      return 'flat';
+    })(),
+    vol_regime: (() => {
+      if (context.impliedVol < 15) return 'low';
+      if (context.impliedVol > 25) return 'high';
+      return 'mid';
+    })(),
+  };
+
+  if (biasValue === 1 && diagnostics.gamma_sign === 'short') {
+    diagnostics.gamma_sign = 'short';
+  }
+
+  return diagnostics;
+}
+
+export async function runPaper(options: PipelineOptions = {}): Promise<HurricaneSignal> {
+  const base = defaultContext();
+  const context = {
+    ...base,
+    ...options.overrides,
+    candidates: options.overrides?.candidates ?? base.candidates,
+  } satisfies PipelineContext;
+
+  const generatedAt = options.asOf ?? new Date().toISOString();
+  const levels = computeGexLevels(context);
+  const bias = computeDirectionBias(context, levels);
+  const speed = computeSpeedSignal(context);
+  const diagnostics = deriveDiagnostics(context, bias.value);
+
+  return {
+    generatedAt,
+    levels,
+    bias,
+    speed,
+    diagnostics,
+  };
+}
+`);
+          ensure('automation/hurricane_sync/reportStatus.ts', raw`/* eslint-disable no-console */
+import fs from 'fs';
+// import { runPaper } from '../../src/hurricane/pipeline/runPaper.js';
+
+type HurricaneOutputs = {
+  levels: { price: number; kind: 'support' | 'resistance'; score: number; sources: string[] }[];
+  bias: { value: -1 | 0 | 1; confidence: number; evidence: string[] };
+  speed: { label: 'calm' | 'normal' | 'breezy' | 'storm'; drivers: string[] };
+  diagnostics: { gamma_sign: 'short' | 'long' | 'mixed'; dix_trend: 'up' | 'down' | 'flat'; vol_regime: 'low' | 'mid' | 'high' };
+};
+
+async function mockRun(): Promise<HurricaneOutputs> {
+  return {
+    levels: [
+      { price: 435, kind: 'support', score: 0.78, sources: ['gex_density', 'gex_gradient', 'dark_pool'] },
+      { price: 440, kind: 'resistance', score: 0.72, sources: ['gex_density', 'volume_shelf'] },
+    ],
+    bias: { value: 1, confidence: 0.62, evidence: ['gamma:short', 'dix:up'] },
+    speed: { label: 'breezy', drivers: ['rv_ratio:1.35', 'vix:17.8', 'dvol:9.2B'] },
+    diagnostics: { gamma_sign: 'short', dix_trend: 'up', vol_regime: 'mid' },
+  };
+}
+
+(async () => {
+  const outputs /* = await runPaper({ asOf: new Date().toISOString() }) */ = await mockRun();
+
+  const lvlTable = outputs.levels
+    .sort((a, b) => a.price - b.price)
+    .map((level) => `| ${level.price.toFixed(2)} | ${level.kind} | ${(level.score * 100).toFixed(0)}% | ${level.sources.join(', ')} |`)
+    .join('\n');
+
+  const score = Math.round(50
+    + ((outputs.bias.confidence - 0.5) * 50)
+    + ((outputs.levels.reduce((sum, level) => sum + level.score, 0) / Math.max(outputs.levels.length, 1)) * 20)
+    + (outputs.speed.label === 'calm' ? -5 : outputs.speed.label === 'storm' ? -10 : 0));
+
+  const markdown = `# Hurricane Codex — Repo Status\n\n**Date:** ${new Date().toISOString()}\n\n## Signal Snapshot\n- **Bias:** ${outputs.bias.value === 1 ? 'Long' : outputs.bias.value === -1 ? 'Short' : 'Neutral'} (${(outputs.bias.confidence * 100).toFixed(0)}%)\n- **Speed:** ${outputs.speed.label}  \`${outputs.speed.drivers.join(', ')}\`\n- **Gamma sign:** ${outputs.diagnostics.gamma_sign}, **DIX trend:** ${outputs.diagnostics.dix_trend}\n\n## Levels\n| Price | Kind | Strength | Sources |\n|---:|:--|:--:|:--|\n${lvlTable || '_none_'}\n\n## Health Score\n**${score}/100**  \n_(70–85 = healthy, 55–70 = needs tuning, <55 = fix soon)_\n\n> This comment is auto-generated by \`automation/hurricane_sync/reportStatus.ts\`. Wire it to real data by replacing \`mockRun()\` with your \`runPaper()\`.\n`
+
+  fs.writeFileSync('hurricane-status.md', markdown);
+  console.log(markdown);
+})();
+`);
+          ensure('.github/pull_request_template.md', raw`# Hurricane Codex PR
+
+## What’s in here
+- [ ] Methodology/spec updates
+- [ ] Signal code changes (S/R, Bias, Speed)
+- [ ] Automation or reporting changes
+
+## Checks
+- [ ] Builds locally
+- [ ] Tests pass (if any)
+- [ ] Signals validate against \`specs/methodology.schema.yaml\`
+
+## Notes
+- Summary / risks:
+`);"
+
+      - name: Build + test (optional)
+        run: |
+          npm run build || true
+          npm test || true
+
+      - name: Run Hurricane status scorer
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npx tsx automation/hurricane_sync/reportStatus.ts > hurricane-status.md || node automation/hurricane_sync/reportStatus.ts > hurricane-status.md
+
+      - name: Create / Update PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          BR=feat/hurricane-codex
+          git checkout -b $BR || git checkout $BR
+          git add .
+          git commit -m "Hurricane Codex: sync methodology, config, and status" || echo "No changes to commit"
+          git push -u origin $BR || echo "Branch push done"
+
+          PR_URL=$(gh pr view $BR --json url -q .url 2>/dev/null || true)
+          if [ -z "$PR_URL" ]; then
+            gh pr create --base main --head $BR --title "Hurricane Codex: methodology & status" --body-file hurricane-status.md
+          else
+            gh pr comment $BR --body-file hurricane-status.md
+          fi

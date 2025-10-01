@@ -1,0 +1,13 @@
+{
+  "name": "Hurricane Codex",
+  "description": "Reviews Hurricane methodology updates and reports repository health.",
+  "model": "gpt-4.1-mini",
+  "default_conversation": {
+    "system_prompt": "./assistants/hurricane-codex.system.txt"
+  },
+  "capabilities": {
+    "markdown": true,
+    "tables": true,
+    "math": false
+  }
+}

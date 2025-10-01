@@ -1,0 +1,76 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: HurricaneMethodology
+description: >-
+  Canonical schema for the Hurricane signal payload returned by
+  src/hurricane/pipeline/runPaper.ts. The schema is kept intentionally small so
+  that validation can run during CI without data backfills.
+type: object
+required:
+  - generatedAt
+  - levels
+  - bias
+  - speed
+  - diagnostics
+properties:
+  generatedAt:
+    type: string
+    format: date-time
+  levels:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [price, kind, score, sources]
+      properties:
+        price:
+          type: number
+        kind:
+          enum: [support, resistance]
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        sources:
+          type: array
+          items:
+            type: string
+  bias:
+    type: object
+    required: [value, confidence, evidence]
+    properties:
+      value:
+        type: integer
+        enum: [-1, 0, 1]
+      confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+      evidence:
+        type: array
+        items:
+          type: string
+  speed:
+    type: object
+    required: [label, drivers]
+    properties:
+      label:
+        type: string
+        enum: [calm, normal, breezy, storm]
+      drivers:
+        type: array
+        items:
+          type: string
+  diagnostics:
+    type: object
+    required: [gamma_sign, dix_trend, vol_regime]
+    properties:
+      gamma_sign:
+        type: string
+        enum: [short, long, mixed]
+      dix_trend:
+        type: string
+        enum: [up, down, flat]
+      vol_regime:
+        type: string
+        enum: [low, mid, high]
+additionalProperties: false
