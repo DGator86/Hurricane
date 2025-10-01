@@ -2,6 +2,16 @@
 
 import { BlackScholes, type OptionPrice, type OptionGreeks } from './BlackScholes'
 
+export type PredictionDirection =
+  | 'bullish'
+  | 'bearish'
+  | 'neutral'
+  | 'BUY'
+  | 'SELL'
+  | 'STRONG_BUY'
+  | 'STRONG_SELL'
+  | 'NEUTRAL'
+
 export interface OptionContract {
   symbol: string
   strike: number
@@ -82,16 +92,20 @@ export class EnhancedOptionsScanner {
   async findBestOption(
     spotPrice: number,
     prediction: {
-      direction: 'bullish' | 'bearish' | 'neutral'
+      direction: PredictionDirection
       expectedReturn: number
       confidence: number
       timeframe: string
     },
     optionChain: OptionContract[]
   ): Promise<OptionRecommendation | null> {
-    if (prediction.direction === 'neutral') return null
+    const normalizedDirection = EnhancedOptionsScanner.normalizeDirection(
+      prediction.direction
+    )
 
-    const isCall = prediction.direction === 'bullish'
+    if (normalizedDirection === 'neutral') return null
+
+    const isCall = normalizedDirection === 'bullish'
     
     // Filter option chain
     const filteredOptions = this.filterOptions(optionChain, isCall)
@@ -405,6 +419,23 @@ export class EnhancedOptionsScanner {
     }
     
     return strikes
+  }
+
+  static normalizeDirection(direction: PredictionDirection): 'bullish' | 'bearish' | 'neutral' {
+    switch (direction) {
+      case 'STRONG_BUY':
+      case 'BUY':
+      case 'bullish':
+        return 'bullish'
+      case 'STRONG_SELL':
+      case 'SELL':
+      case 'bearish':
+        return 'bearish'
+      case 'NEUTRAL':
+      case 'neutral':
+      default:
+        return 'neutral'
+    }
   }
 }
 
