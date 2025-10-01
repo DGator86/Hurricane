@@ -21,6 +21,11 @@ type Bindings = {
   FINNHUB_API_KEY: string
   POLYGON_API_KEY: string
   TWELVE_DATA_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
+  UNUSUAL_WHALES_FLOW_PATH?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -85,8 +90,8 @@ app.route('/api', newMeteorology)
 // Options Flow and Health API
 app.route('/api/options', flowApi)
 
-// Mock Hurricane API for testing
-app.route('/api/meteorology', hurricaneMockApi)
+// Mock Hurricane API remains available under /api/mock for QA
+app.route('/api/mock/meteorology', hurricaneMockApi)
 
 // Production-ready features API
 app.route('/api/production', productionApi)
@@ -1308,9 +1313,18 @@ app.get('/api/market/internals', async (c) => {
 app.get('/api/hurricane/prediction', async (c) => {
   try {
     // Initialize the Hurricane Prediction System
+    const unusualEnv: Record<string, string | undefined> = {
+      UNUSUAL_WHALES_API_BASE: c.env.UNUSUAL_WHALES_API_BASE,
+      UNUSUAL_WHALES_API_TOKEN: c.env.UNUSUAL_WHALES_API_TOKEN,
+      UNUSUAL_WHALES_PREDICT_PATH: c.env.UNUSUAL_WHALES_PREDICT_PATH,
+      UNUSUAL_WHALES_ENHANCED_PATH: c.env.UNUSUAL_WHALES_ENHANCED_PATH,
+      UNUSUAL_WHALES_FLOW_PATH: c.env.UNUSUAL_WHALES_FLOW_PATH
+    }
+
     const system = new IntegratedPredictionSystem(
       c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
+      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8',
+      { env: unusualEnv }
     )
     
     // Generate comprehensive prediction

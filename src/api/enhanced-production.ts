@@ -13,6 +13,11 @@ type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
   TWELVE_DATA_API_KEY: string
   FINNHUB_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
+  UNUSUAL_WHALES_FLOW_PATH?: string
 }
 
 const api = new Hono<{ Bindings: Bindings }>()
@@ -41,10 +46,19 @@ function getServices(env: Bindings) {
     backtestingTracker = BacktestingAccuracy.generateSyntheticHistory(30)
   }
   
-  if (!predictionSystem) {
+  if (!predictionSystem || !predictionSystem.configured) {
+    const unusualEnv: Record<string, string | undefined> = {
+      UNUSUAL_WHALES_API_BASE: env.UNUSUAL_WHALES_API_BASE,
+      UNUSUAL_WHALES_API_TOKEN: env.UNUSUAL_WHALES_API_TOKEN,
+      UNUSUAL_WHALES_PREDICT_PATH: env.UNUSUAL_WHALES_PREDICT_PATH,
+      UNUSUAL_WHALES_ENHANCED_PATH: env.UNUSUAL_WHALES_ENHANCED_PATH,
+      UNUSUAL_WHALES_FLOW_PATH: env.UNUSUAL_WHALES_FLOW_PATH
+    }
+
     predictionSystem = new IntegratedPredictionSystem(
       env.POLYGON_API_KEY,
-      env.TWELVE_DATA_API_KEY
+      env.TWELVE_DATA_API_KEY,
+      { env: unusualEnv }
     )
   }
   
@@ -94,11 +108,23 @@ api.get('/predictions-with-options', async (c) => {
     const optionRecommendations = new Map<string, OptionRecommendation>()
     
     for (const [timeframe, prediction] of Object.entries(predictions.predictions)) {
+      const bias = (prediction.bias ??
+        (prediction.direction.includes('SELL')
+          ? 'bearish'
+          : prediction.direction.includes('BUY')
+          ? 'bullish'
+          : 'neutral')) as 'bullish' | 'bearish' | 'neutral'
+
+      const expectedReturn =
+        typeof prediction.expectedReturn === 'number'
+          ? prediction.expectedReturn
+          : (prediction.expectedMove / 100) * (bias === 'bearish' ? -1 : bias === 'bullish' ? 1 : 0)
+
       const recommendation = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: prediction.direction,
-          expectedReturn: prediction.expectedReturn,
+          direction: bias,
+          expectedReturn,
           confidence: prediction.confidence,
           timeframe
         },
@@ -144,9 +170,35 @@ api.get('/options-recommendations', async (c) => {
     const optionChain = await getOptionChain('SPY', c.env)
     
     // Scan for best options
+    const simplifiedPredictions = new Map<string, {
+      direction: 'bullish' | 'bearish' | 'neutral'
+      expectedReturn: number
+      confidence: number
+    }>()
+
+    for (const [timeframe, prediction] of Object.entries(predictions.predictions)) {
+      const bias = (prediction.bias ??
+        (prediction.direction.includes('SELL')
+          ? 'bearish'
+          : prediction.direction.includes('BUY')
+          ? 'bullish'
+          : 'neutral')) as 'bullish' | 'bearish' | 'neutral'
+
+      const expectedReturn =
+        typeof prediction.expectedReturn === 'number'
+          ? prediction.expectedReturn
+          : (prediction.expectedMove / 100) * (bias === 'bearish' ? -1 : bias === 'bullish' ? 1 : 0)
+
+      simplifiedPredictions.set(timeframe, {
+        direction: bias,
+        expectedReturn,
+        confidence: prediction.confidence
+      })
+    }
+
     const recommendations = await optionsScanner.scanAllTimeframes(
       spotPrice,
-      new Map(Object.entries(predictions.predictions)),
+      simplifiedPredictions,
       optionChain
     )
     

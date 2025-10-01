@@ -12,6 +12,27 @@ type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
   TWELVE_DATA_API_KEY: string
   FINNHUB_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
+  UNUSUAL_WHALES_FLOW_PATH?: string
+}
+
+function createPredictionSystem(env: Bindings) {
+  const unusualEnv: Record<string, string | undefined> = {
+    UNUSUAL_WHALES_API_BASE: env.UNUSUAL_WHALES_API_BASE,
+    UNUSUAL_WHALES_API_TOKEN: env.UNUSUAL_WHALES_API_TOKEN,
+    UNUSUAL_WHALES_PREDICT_PATH: env.UNUSUAL_WHALES_PREDICT_PATH,
+    UNUSUAL_WHALES_ENHANCED_PATH: env.UNUSUAL_WHALES_ENHANCED_PATH,
+    UNUSUAL_WHALES_FLOW_PATH: env.UNUSUAL_WHALES_FLOW_PATH
+  }
+
+  return new IntegratedPredictionSystem(
+    env.POLYGON_API_KEY,
+    env.TWELVE_DATA_API_KEY,
+    { env: unusualEnv }
+  )
 }
 
 const api = new Hono<{ Bindings: Bindings }>()
@@ -33,10 +54,7 @@ const backtestResultsStore = new Map<string, any>()
  */
 api.get('/predictions/current', async (c) => {
   try {
-    const predictionSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY,
-      c.env.TWELVE_DATA_API_KEY
-    )
+    const predictionSystem = createPredictionSystem(c.env)
     
     const predictions = await predictionSystem.generatePrediction()
     const optionsScanner = new EnhancedOptionsScanner()
@@ -60,11 +78,23 @@ api.get('/predictions/current', async (c) => {
     
     // Process each timeframe
     for (const [tf, pred] of Object.entries(predictions.predictions)) {
+      const bias = (pred.bias ??
+        (pred.direction.includes('SELL')
+          ? 'bearish'
+          : pred.direction.includes('BUY')
+          ? 'bullish'
+          : 'neutral')) as 'bullish' | 'bearish' | 'neutral'
+
+      const expectedReturn =
+        typeof pred.expectedReturn === 'number'
+          ? pred.expectedReturn
+          : (pred.expectedMove / 100) * (bias === 'bearish' ? -1 : bias === 'bullish' ? 1 : 0)
+
       const option = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: pred.direction,
-          expectedReturn: pred.expectedMove / 100,
+          direction: bias,
+          expectedReturn,
           confidence: pred.confidence,
           timeframe: tf
         },
@@ -76,7 +106,8 @@ api.get('/predictions/current', async (c) => {
         confidence: pred.confidence,
         target_price: pred.targetPrice,
         stop_loss: pred.stopLoss,
-        expected_move: pred.expectedMove,
+        expected_move:
+          pred.expectedMove * (bias === 'bearish' ? -1 : bias === 'bullish' ? 1 : 0),
         kelly_size: pred.kellySize || predictions.kellySizing,
         option: option ? {
           type: option.type,
@@ -111,10 +142,7 @@ api.get('/predictions/:timeframe', async (c) => {
   }
   
   try {
-    const predictionSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY,
-      c.env.TWELVE_DATA_API_KEY
-    )
+    const predictionSystem = createPredictionSystem(c.env)
     
     const predictions = await predictionSystem.generatePrediction()
     const tfPrediction = predictions.predictions[timeframe]
@@ -314,10 +342,7 @@ api.get('/historical/:date', async (c) => {
   try {
     // In production, this would fetch from your database
     // For now, generate synthetic historical data
-    const predictionSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY,
-      c.env.TWELVE_DATA_API_KEY
-    )
+    const predictionSystem = createPredictionSystem(c.env)
     
     // Generate prediction as if it was for that date
     const predictions = await predictionSystem.generatePrediction(date)

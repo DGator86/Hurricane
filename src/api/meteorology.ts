@@ -28,9 +28,18 @@ meteorologyApi.get('/predict/enhanced', async (c) => {
     const asof = c.req.query('asof')
     
     // Initialize the integrated system
+    const unusualEnv: Record<string, string | undefined> = {
+      UNUSUAL_WHALES_API_BASE: c.env.UNUSUAL_WHALES_API_BASE,
+      UNUSUAL_WHALES_API_TOKEN: c.env.UNUSUAL_WHALES_API_TOKEN,
+      UNUSUAL_WHALES_PREDICT_PATH: c.env.UNUSUAL_WHALES_PREDICT_PATH,
+      UNUSUAL_WHALES_ENHANCED_PATH: c.env.UNUSUAL_WHALES_ENHANCED_PATH,
+      UNUSUAL_WHALES_FLOW_PATH: c.env.UNUSUAL_WHALES_FLOW_PATH
+    }
+
     const integratedSystem = new IntegratedPredictionSystem(
       c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
+      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8',
+      { env: unusualEnv }
     )
     
     // Generate comprehensive prediction
