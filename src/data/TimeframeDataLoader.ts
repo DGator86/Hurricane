@@ -7,7 +7,7 @@ import {
 } from "../services/TimeframeDataLoader";
 
 // Re-export key types
-export { OHLCV, TFData } from "../services/TimeframeDataLoader";
+export type { OHLCV, TFData } from "../services/TimeframeDataLoader";
 
 /**
  * Wrapper to adapt your detailed loader to the simplified interface

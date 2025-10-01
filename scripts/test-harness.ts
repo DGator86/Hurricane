@@ -9,10 +9,14 @@ import { healthChecker } from '../src/services/HealthChecks'
 import { confidenceScorer, EnhancedConfidence } from '../src/services/ConfidenceScoring'
 import { YahooFinanceAPI } from '../src/services/YahooFinanceAPI'
 import { PolygonAPI } from '../src/services/PolygonAPI'
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-interface TestResult {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+export interface TestResult {
   timestamp: Date
   symbol: string
   predictions: {
@@ -46,7 +50,7 @@ interface TestResult {
   }
 }
 
-interface TestMetrics {
+export interface TestMetrics {
   totalPredictions: number
   tradedPositions: number
   accuracy: number
@@ -684,9 +688,11 @@ export class HurricaneTestHarness {
 }
 
 // Run test if executed directly
-if (require.main === module) {
+const isDirectRun = process.argv[1] ? path.resolve(process.argv[1]) === __filename : false
+
+if (isDirectRun) {
   const harness = new HurricaneTestHarness()
-  
+
   const args = process.argv.slice(2)
   const mode = args[0] || 'backtest'
   
@@ -726,4 +732,3 @@ if (require.main === module) {
   }
 }
 
-export { HurricaneTestHarness, TestResult, TestMetrics }
