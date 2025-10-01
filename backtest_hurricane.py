@@ -6,20 +6,25 @@ Tests prediction accuracy, cone calibration, and R-multiple performance
 
 import json
 import csv
-import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as date_class
 from typing import Dict, List, Optional, Tuple
-import requests
 from pathlib import Path
 
+from unusual_whales_client import UnusualWhalesClient
+
 # Configuration
-API_BASE_URL = "http://localhost:3000"  # Adjust if deployed
-PREDICTIONS_DIR = Path("predictions_yahoo")  # Using Yahoo Finance enhanced predictions
+PREDICTIONS_DIR = Path("predictions_unusual_whales")  # Using Unusual Whales enhanced predictions
 SPY_DATA_FILE = Path("spy_data.csv")
 OUTPUT_DIR = Path("backtest_results")
 
 class HurricaneBacktest:
-    def __init__(self, mode: str = "offline"):
+    def __init__(
+        self,
+        mode: str = "offline",
+        start_date: Optional[date_class] = None,
+        end_date: Optional[date_class] = None,
+        months: int = 3,
+    ):
         """
         Initialize backtester
         mode: "offline" (use JSON files) or "api" (fetch from API with ?asof param)
@@ -44,6 +49,14 @@ class HurricaneBacktest:
             }
         }
         
+        # Date window configuration
+        self.start_date = start_date
+        self.end_date = end_date
+        self.months = max(1, months)
+
+        # API clients
+        self.unusual_whales_client = UnusualWhalesClient()
+
         # Create output directory
         OUTPUT_DIR.mkdir(exist_ok=True)
     
@@ -101,6 +114,8 @@ class HurricaneBacktest:
             self.load_offline_predictions()
         else:
             self.load_api_predictions()
+
+        self._apply_date_filters()
     
     def load_offline_predictions(self):
         """Load predictions from JSON files"""
@@ -109,11 +124,86 @@ class HurricaneBacktest:
             PREDICTIONS_DIR.mkdir(exist_ok=True)
             self.create_prediction_example()
             return
-        
+
         for file_path in PREDICTIONS_DIR.glob("*.json"):
             date = file_path.stem  # filename without extension
             with open(file_path, 'r') as f:
                 self.predictions[date] = json.load(f)
+
+    def _apply_date_filters(self):
+        """Filter loaded predictions to the configured date window"""
+        if not self.predictions:
+            return
+
+        all_dates = sorted(self.predictions.keys())
+        parsed_dates = [datetime.strptime(d, "%Y-%m-%d").date() for d in all_dates]
+
+        requested_start = self.start_date
+        requested_end = self.end_date
+
+        # Determine default end date as the latest available prediction
+        if not self.end_date:
+            self.end_date = parsed_dates[-1]
+            requested_end = self.end_date
+
+        # Determine default start date based on requested number of months
+        if not self.start_date:
+            approx_days = int(self.months * 30)
+            self.start_date = self.end_date - timedelta(days=approx_days)
+            requested_start = self.start_date
+
+        # Clamp the window to available data
+        earliest = parsed_dates[0]
+        latest = parsed_dates[-1]
+        clamped_start = max(self.start_date, earliest)
+        clamped_end = min(self.end_date, latest)
+
+        # Ensure start <= end
+        if clamped_start > clamped_end:
+            print("No predictions available within the specified date range.")
+            self.predictions = {}
+            return
+
+        before_count = len(self.predictions)
+        self.start_date = clamped_start
+        self.end_date = clamped_end
+
+        # Filter the predictions
+        filtered: Dict[str, Dict] = {}
+        for date_str in all_dates:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            if self.start_date <= current_date <= self.end_date:
+                filtered[date_str] = self.predictions[date_str]
+
+        self.predictions = filtered
+
+        after_count = len(self.predictions)
+
+        # Notify if the requested window was wider than available data
+        if (
+            (requested_start and self.start_date > requested_start)
+            or (requested_end and self.end_date < requested_end)
+        ):
+            missing_start = None
+            missing_end = None
+            if requested_start and self.start_date > requested_start:
+                missing_start = (self.start_date - requested_start).days
+            if requested_end and self.end_date < requested_end:
+                missing_end = (requested_end - self.end_date).days
+
+            parts = []
+            if missing_start:
+                parts.append(f"{missing_start} days at the start")
+            if missing_end:
+                parts.append(f"{missing_end} days at the end")
+            missing_msg = ", ".join(parts) if parts else "some dates"
+
+            print(
+                "Limited prediction history: requested window"
+                f" {requested_start or 'n/a'} → {requested_end or 'n/a'}"
+                f" but only {self.start_date} → {self.end_date} exists"
+                f" ({before_count - after_count} files excluded, {missing_msg})."
+            )
     
     def create_prediction_example(self):
         """Create example prediction JSON"""
@@ -214,18 +304,21 @@ class HurricaneBacktest:
     
     def load_api_predictions(self):
         """Load predictions from API using ?asof parameter"""
-        for date_str in self.spy_data.keys():
+        dates = sorted(self.spy_data.keys())
+        if not dates:
+            return
+
+        if not self.unusual_whales_client.is_configured:
+            raise RuntimeError(
+                "UNUSUAL_WHALES_API_TOKEN not set. Configure credentials to run API-mode backtests."
+            )
+
+        for date_str in dates:
             try:
-                response = requests.get(
-                    f"{API_BASE_URL}/api/meteorology/predict",
-                    params={"asof": date_str}
-                )
-                if response.status_code == 200:
-                    self.predictions[date_str] = self.parse_api_prediction(response.json())
-                else:
-                    print(f"Failed to fetch prediction for {date_str}: {response.status_code}")
+                payload = self.unusual_whales_client.fetch_enhanced_prediction("SPY", asof=date_str)
+                self.predictions[date_str] = self.parse_api_prediction(payload)
             except Exception as e:
-                print(f"Error fetching prediction for {date_str}: {e}")
+                print(f"Error fetching Unusual Whales prediction for {date_str}: {e}")
     
     def parse_api_prediction(self, api_response: Dict) -> Dict:
         """
@@ -245,8 +338,10 @@ class HurricaneBacktest:
         }
         
         # Extract timeframe predictions
+        forecast_root = api_response.get("forecasts") or api_response.get("predictions") or {}
+
         for tf in ["1m", "5m", "15m", "1h", "4h", "1d"]:
-            tf_data = api_response.get("forecasts", {}).get(tf, {})
+            tf_data = forecast_root.get(tf, {})
             if tf_data:
                 parsed["predictions"][tf] = {
                     "direction": tf_data.get("direction", "NEUTRAL"),
@@ -254,9 +349,9 @@ class HurricaneBacktest:
                     "stop_loss": tf_data.get("stopLoss", 0),
                     "cone_upper": tf_data.get("upperBound", 0),
                     "cone_lower": tf_data.get("lowerBound", 0),
-                    "confidence": tf_data.get("confidence", 0.5)
+                    "confidence": tf_data.get("confidence", tf_data.get("score", 0.5))
                 }
-                parsed["confidence"][tf] = tf_data.get("confidence", 0.5)
+                parsed["confidence"][tf] = tf_data.get("confidence", tf_data.get("score", 0.5))
         
         # Extract option recommendation
         opt_rec = api_response.get("optionTrade")
@@ -273,16 +368,16 @@ class HurricaneBacktest:
             }
         
         # Extract flow metrics
-        flow = api_response.get("flowMetrics", {})
+        flow = api_response.get("flowMetrics", {}) or api_response.get("flow", {})
         parsed["flow_metrics"] = {
             "gex": flow.get("gex", 0),
             "dix": flow.get("dix", 0.5),
             "vanna": flow.get("vanna", 0),
             "charm": flow.get("charm", 0)
         }
-        
+
         # Kelly sizing
-        parsed["kelly_size"] = api_response.get("kellySizing", 0.1)
+        parsed["kelly_size"] = api_response.get("kellySizing") or api_response.get("kellySize", 0.1)
         
         # Overall confidence
         parsed["confidence"]["overall"] = api_response.get("confidence", {}).get("overall", 0.5)
@@ -360,9 +455,12 @@ class HurricaneBacktest:
         self.load_predictions()
         
         print(f"Running backtest on {len(self.predictions)} predictions...")
-        
+        if self.start_date and self.end_date:
+            print(f"Date range: {self.start_date} to {self.end_date}")
+
         # Evaluate each prediction
-        for date, prediction in self.predictions.items():
+        for date in sorted(self.predictions.keys()):
+            prediction = self.predictions[date]
             for timeframe in ["1m", "5m", "15m", "1h", "4h", "1d"]:
                 result = self.evaluate_prediction(date, timeframe, prediction)
                 if result:
@@ -492,15 +590,44 @@ class HurricaneBacktest:
 
 def main():
     """Main entry point"""
-    import sys
-    
-    mode = "offline"  # Default mode
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
-    
-    print(f"Running Hurricane SPY Backtest in {mode} mode...")
-    
-    backtester = HurricaneBacktest(mode=mode)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run Hurricane SPY backtests")
+    parser.add_argument("mode", nargs="?", default="offline", choices=["offline", "api"],
+                        help="Prediction source mode (default: offline)")
+    parser.add_argument("--start", dest="start", help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--end", dest="end", help="End date (YYYY-MM-DD)")
+    parser.add_argument("--months", dest="months", type=int, default=3,
+                        help="Approximate number of months to include when start is omitted (default: 3)")
+
+    args = parser.parse_args()
+
+    start_date: Optional[date_class] = None
+    end_date: Optional[date_class] = None
+
+    if args.start:
+        try:
+            start_date = datetime.strptime(args.start, "%Y-%m-%d").date()
+        except ValueError:
+            raise SystemExit(f"Invalid start date format: {args.start}. Use YYYY-MM-DD.")
+
+    if args.end:
+        try:
+            end_date = datetime.strptime(args.end, "%Y-%m-%d").date()
+        except ValueError:
+            raise SystemExit(f"Invalid end date format: {args.end}. Use YYYY-MM-DD.")
+
+    if start_date and end_date and start_date > end_date:
+        raise SystemExit("Start date must be on or before end date.")
+
+    print(f"Running Hurricane SPY Backtest in {args.mode} mode...")
+
+    backtester = HurricaneBacktest(
+        mode=args.mode,
+        start_date=start_date,
+        end_date=end_date,
+        months=args.months,
+    )
     backtester.run_backtest()
 
 if __name__ == "__main__":
