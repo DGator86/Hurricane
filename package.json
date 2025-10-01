@@ -14,10 +14,12 @@
     "stop": "pm2 stop webapp",
     "restart": "pm2 restart webapp",
     "logs": "pm2 logs webapp --nostream",
-    "test": "curl http://localhost:3000"
+    "test": "curl http://localhost:3000",
+    "hurricane": "tsx scripts/run-hurricane.ts"
   },
   "dependencies": {
-    "hono": "^4.9.8"
+    "hono": "^4.9.8",
+    "tsx": "^4.19.2"
   },
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",

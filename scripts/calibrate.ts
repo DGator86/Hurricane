@@ -9,11 +9,15 @@ import { generateSignals, fuseSignals, fuseMulitpleTimeframes } from '../src/ser
 import { PredictionHealthChecker } from '../src/services/HealthChecks'
 import { YahooFinanceAPI } from '../src/services/YahooFinanceAPI'
 import { PolygonAPI } from '../src/services/PolygonAPI'
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // Configuration for calibration
-interface CalibrationConfig {
+export interface CalibrationConfig {
   symbol: string
   startDate: Date
   endDate: Date
@@ -24,7 +28,7 @@ interface CalibrationConfig {
 }
 
 // Parameter bounds for optimization
-interface ParameterBounds {
+export interface ParameterBounds {
   rsiBounds: {
     [tf: string]: {
       oversold: [number, number]  // [min, max]
@@ -54,7 +58,7 @@ interface ParameterSet {
 }
 
 // Results for a parameter set
-interface CalibrationResult {
+export interface CalibrationResult {
   params: ParameterSet
   accuracy: number
   p80Coverage: number
@@ -68,7 +72,7 @@ interface CalibrationResult {
   score: number  // Combined optimization score
 }
 
-class HurricaneCalibrator {
+export class HurricaneCalibrator {
   private config: CalibrationConfig
   private bounds: ParameterBounds
   private yahooAPI: YahooFinanceAPI
@@ -561,7 +565,9 @@ class HurricaneCalibrator {
 }
 
 // Run calibration if executed directly
-if (require.main === module) {
+const isDirectRun = process.argv[1] ? path.resolve(process.argv[1]) === __filename : false
+
+if (isDirectRun) {
   const config: CalibrationConfig = {
     symbol: 'SPY',
     startDate: new Date('2024-01-01'),
@@ -607,4 +613,3 @@ if (require.main === module) {
     })
 }
 
-export { HurricaneCalibrator, CalibrationConfig, ParameterBounds, CalibrationResult }
