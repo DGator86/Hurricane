@@ -6,10 +6,20 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": [
-      "ESNext"
+      "ESNext",
+      "WebWorker"
     ],
-    "types": ["vite/client"],
+    "types": ["vite/client", "@cloudflare/workers-types"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
+  "exclude": [
+    "dist",
+    "node_modules",
+    "scripts",
+    "public",
+    "predictions",
+    "predictions_enhanced",
+    "predictions_yahoo"
+  ]
 }

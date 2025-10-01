@@ -110,7 +110,7 @@ export class PolygonAPI {
       throw new Error(`Polygon API error: ${response.statusText}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     
     this.cache.set(cacheKey, { data, timestamp: Date.now() })
     return data
@@ -151,7 +151,7 @@ export class PolygonAPI {
       throw new Error(`Polygon API error: ${response.statusText}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     
     this.cache.set(cacheKey, { data, timestamp: Date.now() })
     return data
@@ -168,7 +168,7 @@ export class PolygonAPI {
       throw new Error(`Polygon API error: ${response.statusText}`)
     }
     
-    return await response.json()
+    return await response.json() as any
   }
   
   /**
@@ -190,7 +190,7 @@ export class PolygonAPI {
       throw new Error(`Polygon API error: ${response.statusText}`)
     }
     
-    return await response.json()
+    return await response.json() as any
   }
   
   /**
@@ -218,7 +218,7 @@ export class PolygonAPI {
       return { value: 50 } // Default neutral RSI
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     if (data.results?.values?.[0]) {
       return { value: data.results.values[0].value }
     }
@@ -279,7 +279,7 @@ export class PolygonAPI {
       }
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     if (data.results?.values?.[0]) {
       const value = data.results.values[0]
       return {
@@ -311,7 +311,7 @@ export class PolygonAPI {
       const response = await fetch(url)
       
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as any
         const ticker = data.ticker
         
         return {
@@ -390,7 +390,7 @@ export class PolygonAPI {
         return null
       }
       
-      const data = await response.json()
+      const data = await response.json() as any
       
       if (data.results && data.results.length > 0) {
         const bar = data.results[0]
@@ -431,7 +431,7 @@ export class PolygonAPI {
         return []
       }
       
-      const data = await response.json()
+      const data = await response.json() as any
       
       if (data.results && data.results.length > 0) {
         // Transform Polygon options format to our format

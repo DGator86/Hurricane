@@ -10,24 +10,31 @@ import { PolygonAPI } from './PolygonAPI'
 import { EnhancedMarketDataService } from '../market-data-enhanced'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 
+export interface OptionTradeRecommendation {
+  side: 'CALL' | 'PUT'
+  strike: number
+  expiry: string
+  premium: number
+  targetPrice: number
+  stopLoss: number
+  confidence: number
+  greeks?: Record<string, number>
+  kellySize?: number
+}
+
 export interface TimeframePrediction extends PredictionSignal {
   features: Partial<HurricaneFeatures>
   timestamp: number
+  kellySize: number
+  optionTrade?: OptionTradeRecommendation
 }
 
 export interface ComprehensivePrediction {
   timestamp: string
   currentPrice: number
-  predictions: {
-    '1m': TimeframePrediction
-    '5m': TimeframePrediction
-    '15m': TimeframePrediction
-    '1h': TimeframePrediction
-    '4h': TimeframePrediction
-    '1d': TimeframePrediction
-  }
+  predictions: Record<'1m' | '5m' | '15m' | '1h' | '4h' | '1d', TimeframePrediction>
   overallConfidence: number
-  strongestSignal: string
+  strongestSignal: '1m' | '5m' | '15m' | '1h' | '4h' | '1d'
   marketRegime: string
   kellySizing: number
   criticalLevels: {
@@ -81,16 +88,17 @@ export class IntegratedPredictionSystem {
     )
     
     // Generate predictions for each timeframe
-    const predictions: any = {}
-    const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d']
-    
+    const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d'] as const
+    type Timeframe = typeof timeframes[number]
+    const predictions = {} as Record<Timeframe, TimeframePrediction>
+
     for (const tf of timeframes) {
       const signal = this.predictionModel.predict(features1m, tf)
       const kellySize = this.predictionModel.calculateKellySize(
         signal.confidence,
         signal.expectedMove / 100
       )
-      
+
       predictions[tf] = {
         ...signal,
         features: this.getKeyFeatures(features1m),
@@ -107,9 +115,9 @@ export class IntegratedPredictionSystem {
     ) / totalWeight
     
     // Find strongest signal
-    const strongestSignal = timeframes.reduce((best, tf) => 
+    const strongestSignal = timeframes.reduce<Timeframe>((best, tf) =>
       predictions[tf].confidence > predictions[best].confidence ? tf : best
-    , '1m')
+    , timeframes[0])
     
     // Determine market regime
     const marketRegime = this.determineMarketRegime(features1m)

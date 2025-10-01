@@ -5,6 +5,7 @@ import { EnhancedOptionsScanner } from '../models/OptionsScanner'
 import { BacktestingAccuracy } from '../models/BacktestingAccuracy'
 import { BlackScholes } from '../models/BlackScholes'
 import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
+import type { TimeframePrediction } from '../services/IntegratedPredictionSystem'
 import { PolygonAPI } from '../services/PolygonAPI'
 import type { OptionContract, OptionRecommendation } from '../models/OptionsScanner'
 
@@ -21,6 +22,21 @@ const api = new Hono<{ Bindings: Bindings }>()
 let optionsScanner: EnhancedOptionsScanner | null = null
 let backtestingTracker: BacktestingAccuracy | null = null
 let predictionSystem: IntegratedPredictionSystem | null = null
+
+const normalizeDirection = (
+  direction: TimeframePrediction['direction']
+): 'bullish' | 'bearish' | 'neutral' => {
+  switch (direction) {
+    case 'STRONG_BUY':
+    case 'BUY':
+      return 'bullish'
+    case 'STRONG_SELL':
+    case 'SELL':
+      return 'bearish'
+    default:
+      return 'neutral'
+  }
+}
 
 // Get or create services
 function getServices(env: Bindings) {
@@ -94,10 +110,11 @@ api.get('/predictions-with-options', async (c) => {
     const optionRecommendations = new Map<string, OptionRecommendation>()
     
     for (const [timeframe, prediction] of Object.entries(predictions.predictions)) {
+      const direction = normalizeDirection(prediction.direction)
       const recommendation = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: prediction.direction,
+          direction,
           expectedReturn: prediction.expectedReturn,
           confidence: prediction.confidence,
           timeframe

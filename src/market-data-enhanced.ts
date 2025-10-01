@@ -280,6 +280,55 @@ export class EnhancedMarketDataService {
     return this.generateSyntheticCandles(interval, outputSize === 'full' ? 500 : 100)
   }
 
+  async getDailyData(outputSize: 'compact' | 'full' = 'compact'): Promise<Candle[]> {
+    return this.getHistoricalData('daily', outputSize)
+  }
+
+  async getTechnicalIndicator(
+    indicator: string,
+    interval: 'daily' | 'weekly' | 'monthly' | 'intraday' = 'daily',
+    timePeriod: number = 14
+  ): Promise<any | null> {
+    if (!this.alphaVantageKey) {
+      console.warn(`⚠️ Alpha Vantage key unavailable for ${indicator} request`)
+      return null
+    }
+
+    const cacheKey = `indicator_${indicator}_${interval}_${timePeriod}`
+    const cached = this.getCached(cacheKey)
+    if (cached) return cached
+
+    try {
+      const params = new URLSearchParams({
+        function: indicator,
+        symbol: 'SPY',
+        interval,
+        time_period: timePeriod.toString(),
+        series_type: 'close',
+        apikey: this.alphaVantageKey
+      })
+
+      const response = await fetch(`https://www.alphavantage.co/query?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error(`Alpha Vantage responded with ${response.status}`)
+      }
+
+      const data = await response.json() as Record<string, unknown>
+      const analysisKey = `Technical Analysis: ${indicator}`
+      if (analysisKey in data) {
+        const result = data[analysisKey]
+        this.setCache(cacheKey, result)
+        return result
+      }
+
+      console.warn(`⚠️ ${indicator} not available from Alpha Vantage response`)
+      return null
+    } catch (error) {
+      console.error(`❌ Failed to fetch ${indicator} from Alpha Vantage:`, error)
+      return null
+    }
+  }
+
   // Fetch RSI - PRIMARY: Polygon.io
   async getRSI(period: number = 14): Promise<number> {
     const cacheKey = `rsi_${period}`

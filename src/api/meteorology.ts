@@ -10,12 +10,26 @@ import {
   type OHLCV,
   type OptionSnapshot,
   type DarkPoolPrint,
-  type MarketEvent
+  type MarketEvent,
+  type OptionTrade
 } from '../models/MarketMeteorology'
 import { EnhancedMarketDataService } from '../market-data-enhanced'
-import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
+import { IntegratedPredictionSystem, type TimeframePrediction } from '../services/IntegratedPredictionSystem'
 
-const meteorologyApi = new Hono()
+type Bindings = {
+  POLYGON_API_KEY?: string
+  ALPHA_VANTAGE_API_KEY?: string
+  TWELVE_DATA_API_KEY?: string
+}
+
+type ExtendedOptionTrade = OptionTrade & {
+  premium?: number
+  targetPrice?: number
+  greeks?: Record<string, number>
+  kellySize?: number
+}
+
+const meteorologyApi = new Hono<{ Bindings: Bindings }>()
 
 // Initialize the system
 const meteorologySystem = new MarketMeteorologySystem()
@@ -28,19 +42,25 @@ meteorologyApi.get('/predict/enhanced', async (c) => {
     const asof = c.req.query('asof')
     
     // Initialize the integrated system
+    const env = c.env as Bindings
     const integratedSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
+      env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      env.TWELVE_DATA_API_KEY || '44b220a2cbd540c9a50ed2a97ef3e8d8'
     )
-    
+
     // Generate comprehensive prediction
     const prediction = await integratedSystem.generatePrediction(asof)
-    
+
     // Format response for backtesting compatibility
-    const timeframePredictions: any = {}
-    const confidences: any = { overall: prediction.overallConfidence }
-    
-    Object.entries(prediction.predictions).forEach(([tf, pred]) => {
+    const timeframePredictions: Record<string, Record<string, unknown>> = {}
+    const confidences: Record<string, number> = { overall: prediction.overallConfidence }
+
+    const predictionEntries = Object.entries(prediction.predictions) as [
+      keyof typeof prediction.predictions,
+      TimeframePrediction
+    ][]
+
+    predictionEntries.forEach(([tf, pred]) => {
       timeframePredictions[tf] = {
         direction: pred.direction.replace('STRONG_', '').replace('_', ''),
         target: pred.targetPrice,
@@ -95,10 +115,11 @@ meteorologyApi.get('/predict/enhanced', async (c) => {
     })
   } catch (error) {
     console.error('Enhanced prediction error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return c.json({
       success: false,
       error: 'Failed to generate enhanced prediction',
-      message: error.message
+      message
     }, 500)
   }
 })
@@ -113,9 +134,10 @@ meteorologyApi.get('/predict', async (c) => {
     const isHistorical = !!asof
     
     // Get market data (using Polygon as primary)
+    const env = c.env as Bindings
     const marketService = new EnhancedMarketDataService(
-      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.ALPHA_VANTAGE_API_KEY
+      env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      env.ALPHA_VANTAGE_API_KEY
     )
     
     // For historical requests, we need to fetch historical data
@@ -160,6 +182,12 @@ meteorologyApi.get('/predict', async (c) => {
     )
     
     // Format response (compatible with backtest harness)
+    const optionTrade = prediction.optionTrade as ExtendedOptionTrade
+    const premium = optionTrade.premium ?? optionTrade.entryPrice
+    const targetPremium = optionTrade.targetPrice ?? optionTrade.targetExit
+    const greeks = optionTrade.greeks ?? {}
+    const kellySize = optionTrade.kellySize ?? 0.1
+
     return c.json({
       success: true,
       timestamp: isHistorical ? `${asof}T09:30:00Z` : new Date().toISOString(),
@@ -177,7 +205,10 @@ meteorologyApi.get('/predict', async (c) => {
       confidence: {
         overall: prediction.forecast.confidence,
         ...Object.fromEntries(
-          Object.entries(timeframePredictions).map(([tf, pred]) => [tf, pred.confidence])
+          Object.entries(timeframePredictions).map(([tf, pred]) => [
+            tf,
+            (pred as { confidence?: number }).confidence ?? prediction.forecast.confidence
+          ])
         )
       },
       
@@ -197,25 +228,25 @@ meteorologyApi.get('/predict', async (c) => {
       // Options recommendation
       optionTrade: {
         ...prediction.optionTrade,
-        side: prediction.optionTrade.side,
-        premium: prediction.optionTrade.premium,
-        targetPremium: prediction.optionTrade.targetPrice,
-        greeks: prediction.optionTrade.greeks || {}
+        side: optionTrade.side,
+        premium,
+        targetPremium,
+        greeks
       },
       option_recommendation: {
-        type: prediction.optionTrade.side,
-        strike: prediction.optionTrade.strike,
-        expiry: prediction.optionTrade.expiry,
-        entry_price: prediction.optionTrade.premium,
-        target_price: prediction.optionTrade.targetPrice,
-        stop_loss: prediction.optionTrade.stopLoss,
-        confidence: prediction.optionTrade.confidence || prediction.forecast.confidence,
-        greeks: prediction.optionTrade.greeks || {}
+        type: optionTrade.side,
+        strike: optionTrade.strike,
+        expiry: optionTrade.expiry,
+        entry_price: premium,
+        target_price: targetPremium,
+        stop_loss: optionTrade.stopLoss,
+        confidence: optionTrade.confidence || prediction.forecast.confidence,
+        greeks
       },
-      
+
       // Kelly sizing
-      kellySizing: prediction.optionTrade.kellySize || 0.1,
-      kelly_size: prediction.optionTrade.kellySize || 0.1,
+      kellySizing: kellySize,
+      kelly_size: kellySize,
       
       // Flow metrics
       flowMetrics: {
@@ -242,10 +273,11 @@ meteorologyApi.get('/predict', async (c) => {
     })
   } catch (error) {
     console.error('Market Meteorology prediction error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return c.json({
       success: false,
       error: 'Failed to generate prediction',
-      message: error.message
+      message
     }, 500)
   }
 })
@@ -255,9 +287,10 @@ meteorologyApi.get('/predict', async (c) => {
  */
 meteorologyApi.get('/regime', async (c) => {
   try {
+    const env = c.env as Bindings
     const marketService = new EnhancedMarketDataService(
-      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.ALPHA_VANTAGE_API_KEY
+      env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      env.ALPHA_VANTAGE_API_KEY
     )
     
     const marketStatus = await marketService.getMarketStatus()
@@ -273,9 +306,11 @@ meteorologyApi.get('/regime', async (c) => {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return c.json({
       success: false,
-      error: 'Failed to analyze regime'
+      error: 'Failed to analyze regime',
+      message
     }, 500)
   }
 })
@@ -285,9 +320,10 @@ meteorologyApi.get('/regime', async (c) => {
  */
 meteorologyApi.get('/flow', async (c) => {
   try {
+    const env = c.env as Bindings
     const marketService = new EnhancedMarketDataService(
-      c.env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
-      c.env.ALPHA_VANTAGE_API_KEY
+      env.POLYGON_API_KEY || 'Jm_fqc_gtSTSXG78P67dpBpO3LX_4P6D',
+      env.ALPHA_VANTAGE_API_KEY
     )
     
     const marketStatus = await marketService.getMarketStatus()
@@ -322,9 +358,11 @@ meteorologyApi.get('/flow', async (c) => {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return c.json({
       success: false,
-      error: 'Failed to analyze options flow'
+      error: 'Failed to analyze options flow',
+      message
     }, 500)
   }
 })

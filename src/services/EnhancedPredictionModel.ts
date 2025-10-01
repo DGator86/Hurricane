@@ -12,7 +12,8 @@ export interface PredictionSignal {
   stopLoss: number
   reasons: string[]
   timeframe: string
-  expectedMove: number  // Percentage
+  expectedMove: number  // Percentage move of the underlying
+  expectedReturn: number  // Decimal return used by legacy option scanners
   riskReward: number
 }
 
@@ -250,6 +251,7 @@ export class EnhancedPredictionModel {
     
     // Calculate expected move as ATR * multiplier
     const expectedMove = effectiveAtrPercent * atrMultiplier
+    const expectedReturn = expectedMove / 100
     
     // Calculate target and stop with proper risk management
     // Target: aim for the full expected move
@@ -280,6 +282,7 @@ export class EnhancedPredictionModel {
       reasons: topReasons,
       timeframe,
       expectedMove,
+      expectedReturn,
       riskReward
     }
   }

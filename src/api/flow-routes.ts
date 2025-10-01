@@ -57,9 +57,10 @@ api.get('/flow', async (c) => {
     })
   } catch (error) {
     console.error('Flow analysis error:', error)
-    return c.json({ 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({
       error: 'Failed to analyze options flow',
-      details: error.message
+      details: message
     }, 500)
   }
 })
@@ -100,9 +101,10 @@ api.get('/levels', async (c) => {
     })
   } catch (error) {
     console.error('Levels error:', error)
-    return c.json({ 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({
       error: 'Failed to get price levels',
-      details: error.message
+      details: message
     }, 500)
   }
 })
@@ -115,11 +117,11 @@ api.get('/health', async (c) => {
   
   try {
     // Use mock data for now
-    const metrics = MockDataGenerator.generateHealthMetrics()
+    const metrics = MockDataGenerator.generateHealthMetrics() as Record<string, { score: number } & Record<string, unknown>>
     const warnings: string[] = []
     
     // Overall system health
-    const healthScores = Object.values(metrics).map(m => m.score)
+    const healthScores = Object.values(metrics).map(metric => metric.score)
     const avgHealth = healthScores.length > 0 ? 
       healthScores.reduce((a, b) => a + b, 0) / healthScores.length : 0.6
     
@@ -137,9 +139,10 @@ api.get('/health', async (c) => {
     })
   } catch (error) {
     console.error('Health check error:', error)
-    return c.json({ 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({
       error: 'Failed to get health metrics',
-      details: error.message
+      details: message
     }, 500)
   }
 })
@@ -200,9 +203,10 @@ api.get('/health/:tf', async (c) => {
     })
   } catch (error) {
     console.error('TF health error:', error)
-    return c.json({ 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({
       error: 'Failed to get timeframe health',
-      details: error.message
+      details: message
     }, 500)
   }
 })
@@ -235,9 +239,10 @@ api.post('/health/update', async (c) => {
     })
   } catch (error) {
     console.error('Health update error:', error)
-    return c.json({ 
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({
       error: 'Failed to update health',
-      details: error.message
+      details: message
     }, 500)
   }
 })
@@ -247,20 +252,20 @@ api.post('/health/update', async (c) => {
  */
 async function getATRByTimeframe(symbol: string, asof: Date): Promise<Record<string, number>> {
   const atrByTF: Record<string, number> = {}
-  const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d']
-  
+  const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'] as const
+  const mockATR: Record<typeof timeframes[number], number> = {
+    '1m': 0.5,
+    '5m': 0.8,
+    '15m': 1.2,
+    '30m': 1.5,
+    '1h': 2.0,
+    '4h': 3.5,
+    '1d': 5.0
+  }
+
   for (const tf of timeframes) {
     try {
       // Simplified - would use actual loadTF with data fetcher
-      const mockATR = {
-        '1m': 0.5,
-        '5m': 0.8,
-        '15m': 1.2,
-        '30m': 1.5,
-        '1h': 2.0,
-        '4h': 3.5,
-        '1d': 5.0
-      }
       atrByTF[tf] = mockATR[tf] || 1.0
     } catch (error) {
       console.warn(`Failed to get ATR for ${tf}:`, error)
