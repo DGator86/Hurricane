@@ -102,7 +102,7 @@ python3 backtest_hurricane.py offline
 
 ### Files Generated
 - `spy_data.csv` - 30 days of real SPY OHLCV data
-- `predictions/*.json` - 31 prediction files
+- `predictions_unusual_whales/*.json` - Unusual Whales prediction files for the evaluated window
 - `backtest_results/` - Complete analysis outputs
 
 ## Critical Insights
