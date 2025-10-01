@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Configuration
 API_BASE_URL = "http://localhost:3000"  # Adjust if deployed
-PREDICTIONS_DIR = Path("predictions_yahoo")  # Using Yahoo Finance enhanced predictions
+PREDICTIONS_DIR = Path("predictions_unusual_whales")  # Unusual Whales prediction exports
 SPY_DATA_FILE = Path("spy_data.csv")
 OUTPUT_DIR = Path("backtest_results")
 
@@ -105,7 +105,7 @@ class HurricaneBacktest:
     def load_offline_predictions(self):
         """Load predictions from JSON files"""
         if not PREDICTIONS_DIR.exists():
-            print(f"Creating predictions directory with example: {PREDICTIONS_DIR}")
+            print(f"Creating Unusual Whales predictions directory: {PREDICTIONS_DIR}")
             PREDICTIONS_DIR.mkdir(exist_ok=True)
             self.create_prediction_example()
             return

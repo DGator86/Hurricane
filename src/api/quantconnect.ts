@@ -8,10 +8,10 @@ import { BacktestingAccuracy } from '../models/BacktestingAccuracy'
 import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
 
 type Bindings = {
-  POLYGON_API_KEY: string
-  ALPHA_VANTAGE_API_KEY: string
-  TWELVE_DATA_API_KEY: string
-  FINNHUB_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
 }
 
 const api = new Hono<{ Bindings: Bindings }>()
@@ -33,10 +33,7 @@ const backtestResultsStore = new Map<string, any>()
  */
 api.get('/predictions/current', async (c) => {
   try {
-    const predictionSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY,
-      c.env.TWELVE_DATA_API_KEY
-    )
+    const predictionSystem = new IntegratedPredictionSystem(undefined, undefined, { env: c.env })
     
     const predictions = await predictionSystem.generatePrediction()
     const optionsScanner = new EnhancedOptionsScanner()
@@ -111,10 +108,7 @@ api.get('/predictions/:timeframe', async (c) => {
   }
   
   try {
-    const predictionSystem = new IntegratedPredictionSystem(
-      c.env.POLYGON_API_KEY,
-      c.env.TWELVE_DATA_API_KEY
-    )
+    const predictionSystem = new IntegratedPredictionSystem(undefined, undefined, { env: c.env })
     
     const predictions = await predictionSystem.generatePrediction()
     const tfPrediction = predictions.predictions[timeframe]

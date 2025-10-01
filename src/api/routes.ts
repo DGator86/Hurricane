@@ -1,46 +1,71 @@
-import { Hono } from "hono";
-import { predictAll } from "../core/PredictionEngine";
+import { Hono } from 'hono'
+import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
+import { buildUnusualWhalesClient } from '../services/unusualWhales'
 
-export const api = new Hono();
+const api = new Hono<{ Bindings: Record<string, string | undefined> }>()
 
-// Full ensemble prediction (with health + cone/ATR/Kelly fields)
-api.get("/api/meteorology/predict", async c => {
-  const symbol = (c.req.query("symbol") ?? "SPY").toUpperCase();
-  const asofStr = c.req.query("asof");
-  const asof = asofStr ? new Date(asofStr) : new Date();
-  
-  try {
-    const result = await predictAll(symbol, asof);
-    return c.json(result);
-  } catch (error) {
-    console.error("Prediction error:", error);
-    return c.json({ error: "Failed to generate prediction", details: error.message }, 500);
+let cachedSystem: IntegratedPredictionSystem | null = null
+let cachedToken: string | undefined
+
+function getSystem(env: Record<string, string | undefined>) {
+  const token = env.UNUSUAL_WHALES_API_TOKEN
+  if (!cachedSystem || cachedToken !== token) {
+    cachedSystem = new IntegratedPredictionSystem(undefined, undefined, { env })
+    cachedToken = token
   }
-});
+  return cachedSystem
+}
 
-// Regime snapshot (per TF)
-api.get("/api/meteorology/regime", async c => {
-  const symbol = (c.req.query("symbol") ?? "SPY").toUpperCase();
-  const asofStr = c.req.query("asof");
-  const asof = asofStr ? new Date(asofStr) : new Date();
-  
-  try {
-    const { perTF } = await predictAll(symbol, asof);
-    return c.json(perTF.map(x => ({ 
-      tf: x.tf, 
-      regime: x.regime, 
-      confidence: x.confidence, 
-      side: x.side 
-    })));
-  } catch (error) {
-    console.error("Regime error:", error);
-    return c.json({ error: "Failed to get regime", details: error.message }, 500);
+function ensureConfigured(system: IntegratedPredictionSystem) {
+  if (!system.configured) {
+    throw new Error('Unusual Whales credentials missing. Set UNUSUAL_WHALES_API_TOKEN.')
   }
-});
+}
 
-// Options flow passthrough (keep your existing)
-api.get("/api/meteorology/flow", async c => {
-  /* your real flow aggregation (ORATS/Polygon/UW proxy) */
-  /* return c.json({ gex: ..., vanna: ..., charm: ..., z: { ... } }); */
-  return c.json({ status: "placeholder", gex: 0, vanna: 0, charm: 0 });
-});
+api.get('/api/meteorology/predict', async c => {
+  try {
+    const system = getSystem(c.env)
+    ensureConfigured(system)
+
+    const asof = c.req.query('asof') ?? undefined
+    const symbol = (c.req.query('symbol') ?? 'SPY').toUpperCase()
+
+    const prediction = await system.generatePrediction(asof)
+    return c.json({ symbol, ...prediction })
+  } catch (error: any) {
+    console.error('Prediction error:', error)
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to generate prediction',
+        message: error?.message ?? String(error)
+      },
+      500
+    )
+  }
+})
+
+api.get('/api/meteorology/flow', async c => {
+  try {
+    const client = buildUnusualWhalesClient(c.env)
+    if (!client.enabled) {
+      throw new Error('Unusual Whales credentials missing. Set UNUSUAL_WHALES_API_TOKEN.')
+    }
+
+    const symbol = (c.req.query('symbol') ?? 'SPY').toUpperCase()
+    const snapshot = await client.fetchFlow(symbol)
+    return c.json({ success: true, symbol, snapshot })
+  } catch (error: any) {
+    console.error('Flow error:', error)
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to fetch Unusual Whales flow snapshot',
+        message: error?.message ?? String(error)
+      },
+      500
+    )
+  }
+})
+
+export { api }

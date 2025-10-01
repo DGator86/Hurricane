@@ -5,14 +5,13 @@ import { EnhancedOptionsScanner } from '../models/OptionsScanner'
 import { BacktestingAccuracy } from '../models/BacktestingAccuracy'
 import { BlackScholes } from '../models/BlackScholes'
 import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
-import { PolygonAPI } from '../services/PolygonAPI'
 import type { OptionContract, OptionRecommendation } from '../models/OptionsScanner'
 
 type Bindings = {
-  POLYGON_API_KEY: string
-  ALPHA_VANTAGE_API_KEY: string
-  TWELVE_DATA_API_KEY: string
-  FINNHUB_API_KEY: string
+  UNUSUAL_WHALES_API_TOKEN?: string
+  UNUSUAL_WHALES_API_BASE?: string
+  UNUSUAL_WHALES_PREDICT_PATH?: string
+  UNUSUAL_WHALES_ENHANCED_PATH?: string
 }
 
 const api = new Hono<{ Bindings: Bindings }>()
@@ -42,10 +41,7 @@ function getServices(env: Bindings) {
   }
   
   if (!predictionSystem) {
-    predictionSystem = new IntegratedPredictionSystem(
-      env.POLYGON_API_KEY,
-      env.TWELVE_DATA_API_KEY
-    )
+    predictionSystem = new IntegratedPredictionSystem(undefined, undefined, { env })
   }
   
   return { optionsScanner, backtestingTracker, predictionSystem }
@@ -56,22 +52,7 @@ async function getOptionChain(
   symbol: string,
   env: Bindings
 ): Promise<OptionContract[]> {
-  try {
-    if (env.POLYGON_API_KEY) {
-      const polygon = new PolygonAPI(env.POLYGON_API_KEY)
-      // Note: Polygon options endpoint might be different
-      // This is a placeholder for the actual implementation
-      const contracts = await polygon.getOptionsChain(symbol)
-      
-      if (contracts && contracts.length > 0) {
-        return contracts
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching option chain:', error)
-  }
-  
-  // Fallback to synthetic data
+  // Synthetic chain until Unusual Whales options endpoints are wired
   const spotPrice = 455  // Default SPY price
   return EnhancedOptionsScanner.generateSyntheticOptionChain(spotPrice, [0, 1, 2])
 }
