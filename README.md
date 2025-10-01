@@ -1,7 +1,8 @@
 # Hurricane SPY Trading System 🌀
 
 ## 🚀 Live Demo
-**Production URL**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev
+**Local Dev URL**: http://localhost:5173/hurricane-test *(start the Vite dev server with `npm run dev`)*
+**Legacy Production URL**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev *(cluster now retired)*
 
 ## Overview
 Hurricane SPY is a sophisticated multi-timeframe prediction system for SPY options trading, featuring:
@@ -104,6 +105,11 @@ interface OptionRecommendation {
 1. **Polygon.io** (PRIMARY) - Real-time quotes, aggregates, technicals
 2. **Alpha Vantage** (FALLBACK) - Backup data source
 3. **Synthetic Data** (LAST RESORT) - Generated data for continuity
+
+#### Unusual Whales Options Flow
+- **Environment variables**: set `UNUSUAL_WHALES_API_KEY` (required) and optionally `UNUSUAL_WHALES_BASE_URL` to override the default `https://phx.unusualwhales.com/api` endpoint.
+- **Failure mode**: if the API key is missing or rejected, the `/api/flow` route will mark the Unusual Whales variants as unavailable and fall back to Yahoo Finance/Polygon or synthetic chains. The dashboard surfaces this as "Unusual Whales client not configured" alongside the failed endpoints.
+- **Result metadata**: each variant response includes the endpoint that was attempted, status code, and error message so you can confirm credentials are working before relying on the live feed.
 
 ## 🎨 User Guide
 

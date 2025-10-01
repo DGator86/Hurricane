@@ -5,7 +5,12 @@ The Hurricane SPY Prediction System is now FULLY OPERATIONAL with comprehensive 
 
 ## 🌐 Access URLs
 
-### Production URL (Sandbox)
+### Local Development (Vite)
+- **Main Dashboard**: http://localhost:5173/
+- **Comprehensive Test Dashboard**: http://localhost:5173/hurricane-test
+- **API Health Check**: http://localhost:5173/api/meteorology/health *(proxied through Vite dev server)*
+
+### Legacy Sandbox Deployment
 - **Main Dashboard**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/
 - **Comprehensive Test Dashboard**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/hurricane-test
 - **API Health Check**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/api/meteorology/health

@@ -60,6 +60,8 @@ export interface OptionsFlowOutput {
     total: number
     zscore: number
     gamma_flip: number  // Zero gamma strike
+    net?: number
+    source?: string
   }
   magnets: PriceMagnet[]
   vol_zones: VolatilityZone[]
@@ -141,6 +143,8 @@ export class OptionsFlowAnalyzer {
       gex: {
         by_strike: smoothed.map(f => [f.strike, f.gex]),
         total: smoothed.reduce((sum, f) => sum + f.gex, 0),
+        net: smoothed.reduce((sum, f) => sum + f.gex, 0),
+        source: 'derived_chain',
         zscore: zscores.gex,
         gamma_flip: gammaFlip
       },

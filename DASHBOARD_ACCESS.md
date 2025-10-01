@@ -4,18 +4,19 @@
 
 The Hurricane SPY system is now fully deployed with multiple dashboard views. Access them at:
 
-### Public URL: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev
+### Local Development URL: http://localhost:5173/hurricane-test *(run `npm run dev` to start the Vite server)*
+### Legacy Public URL: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev *(no longer active)*
 
 ## 📊 Available Dashboards
 
 ### 1. **Main Dashboard** - `/`
-- **URL**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/
+- **URL**: http://localhost:5173/
 - Original hurricane dashboard with animated background
 - Shows timeframe predictions, high confidence trades, and market indicators
 - Uses `/static/hurricane-dashboard.js` and `/static/hurricane-enhanced.js`
 
 ### 2. **Complete Dashboard** - `/dashboard` ⭐ RECOMMENDED
-- **URL**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/dashboard
+- **URL**: http://localhost:5173/dashboard
 - **Features**:
   - ✅ All 6 timeframe predictions (5m, 15m, 30m, 1h, 4h, 1d)
   - ✅ High confidence trades (≥75% confidence) with Kelly sizing
@@ -28,7 +29,7 @@ The Hurricane SPY system is now fully deployed with multiple dashboard views. Ac
 - Uses `/static/hurricane-live.js` for enhanced functionality
 
 ### 3. **Test Dashboard** - `/hurricane-test`
-- **URL**: https://3000-iyqipnpwvhcbn3mvpn6y3-6532622b.e2b.dev/hurricane-test
+- **URL**: http://localhost:5173/hurricane-test
 - Simplified test interface with inline JavaScript
 - Good for debugging API responses
 
