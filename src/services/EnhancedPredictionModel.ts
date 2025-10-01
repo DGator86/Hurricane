@@ -473,23 +473,41 @@ export class EnhancedPredictionModel {
   calculateKellySize(
     confidence: number,
     expectedReturn: number,
-    historicalWinRate: number = 0.27  // From our backtest
+    historicalWinRate: number = 0.27,  // From our backtest
+    riskReward?: number
   ): number {
     // Kelly formula: f = (p * b - q) / b
     // p = probability of winning
     // q = probability of losing (1-p)
     // b = ratio of win to loss
-    
-    const p = confidence * historicalWinRate
+
+    // Blend model confidence with historical win rate so strong signals can
+    // outweigh the base rate without being unfairly penalized.
+    const blendedProbability = 0.6 * confidence + 0.4 * historicalWinRate
+    const p = Math.min(0.95, Math.max(0.05, blendedProbability))
     const q = 1 - p
-    const b = Math.abs(expectedReturn)
-    
-    const kellyFraction = (p * b - q) / b
-    
+
+    // Guard against extremely small expected returns that come from
+    // ATR-derived percentages by normalizing to percent units when
+    // necessary and blending with the projected risk/reward ratio so the
+    // Kelly payout term reflects the trade structure instead of collapsing
+    // toward zero.
+    const rawEdge = Math.abs(expectedReturn)
+    const edgePercent = rawEdge < 0.01 ? rawEdge * 100 : rawEdge
+    const derivedPayout = edgePercent
+    const minPayout = 1.0  // Assume at least a 1R payout when sizing
+    const maxPayout = 5.0  // Cap to avoid unrealistic leverage from noise
+    const payoutRatio = Math.max(
+      minPayout,
+      Math.min(maxPayout, riskReward && riskReward > 0 ? riskReward : derivedPayout)
+    )
+
+    const kellyFraction = (p * payoutRatio - q) / payoutRatio
+
     // Apply Kelly safety factor (typically 0.25 to 0.5)
     const safetyFactor = 0.25
     const safeKelly = Math.max(0, Math.min(0.25, kellyFraction * safetyFactor))
-    
+
     return safeKelly
   }
 }
