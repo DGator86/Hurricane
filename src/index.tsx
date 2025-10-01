@@ -15,12 +15,18 @@ import { HurricaneDashboard } from './hurricane-page'
 import flowApi from './api/flow-routes'
 import hurricaneMockApi from './api/hurricane-mock'
 import productionApi from './api/production-routes'
+import alpacaApi from './api/alpaca'
 
 type Bindings = {
   ALPHA_VANTAGE_API_KEY: string
   FINNHUB_API_KEY: string
   POLYGON_API_KEY: string
   TWELVE_DATA_API_KEY: string
+  ALPACA_API_KEY?: string
+  ALPACA_API_SECRET?: string
+  ALPACA_API_BASE_URL?: string
+  UNUSUAL_WHALES_API_KEY?: string
+  UNUSUAL_WHALES_BASE_URL?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -90,6 +96,7 @@ app.route('/api/meteorology', hurricaneMockApi)
 
 // Production-ready features API
 app.route('/api/production', productionApi)
+app.route('/api/alpaca', alpacaApi)
 
 // Enhanced Production API with Options and Backtesting
 import enhancedProductionApi from './api/enhanced-production'
@@ -208,6 +215,12 @@ app.get('/hurricane-test', (c) => {
                             <div class="text-sm text-gray-400 mb-2">Price Magnets:</div>
                             <div id="magnets" class="space-y-1 text-sm"></div>
                         </div>
+                        <div class="mt-4 border-t border-gray-700 pt-3">
+                            <div class="text-sm text-gray-400 mb-2">Unusual Whales Variants</div>
+                            <div id="whales-variants" class="space-y-1 text-xs text-gray-300">
+                                <div class="text-gray-500">Waiting for data...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -247,6 +260,119 @@ app.get('/hurricane-test', (c) => {
                 </div>
             </div>
         </div>
+
+        <!-- Alpaca Trading Bridge -->
+        <div class="mt-8 grid grid-cols-3 gap-6">
+            <!-- Connection & Credentials -->
+            <div class="col-span-1 bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-plug mr-2 text-emerald-400"></i>
+                            Alpaca Connection
+                        </h2>
+                        <p class="text-xs text-gray-400">Paper trading REST bridge</p>
+                    </div>
+                    <span id="alpaca-connection-badge" class="text-xs px-2 py-1 rounded bg-gray-700 text-gray-300">Disconnected</span>
+                </div>
+
+                <form id="alpaca-connect-form" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Endpoint</label>
+                        <input type="text" name="baseUrl" value="https://paper-api.alpaca.markets" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs text-gray-400">API Key</label>
+                            <button type="button" id="alpaca-regenerate" class="text-[10px] uppercase tracking-wide text-emerald-400 hover:text-emerald-300">Regenerate</button>
+                        </div>
+                        <input type="text" name="apiKey" placeholder="Enter API key" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Secret Key</label>
+                        <input type="password" name="apiSecret" placeholder="Enter secret key" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded text-sm font-semibold transition-colors">Connect</button>
+                        <button type="button" id="alpaca-clear" class="text-xs text-gray-400 hover:text-gray-200">Clear</button>
+                    </div>
+                    <p id="alpaca-status-text" class="text-xs text-gray-400">Not connected to Alpaca</p>
+                </form>
+            </div>
+
+            <!-- Order Placement -->
+            <div class="col-span-2 bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-paper-plane mr-2 text-sky-400"></i>
+                            Push Trade to Alpaca
+                        </h2>
+                        <p class="text-xs text-gray-400">Send live orders directly to paper trading</p>
+                    </div>
+                    <div class="text-right text-xs text-gray-400">
+                        <div>Equity: <span id="alpaca-equity">--</span></div>
+                        <div>Buying Power: <span id="alpaca-buying-power">--</span></div>
+                    </div>
+                </div>
+
+                <form id="alpaca-order-form" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Symbol</label>
+                        <input type="text" name="symbol" value="SPY" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Quantity</label>
+                        <input type="number" name="qty" min="1" step="1" value="1" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Side</label>
+                        <select name="side" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="buy">Buy</option>
+                            <option value="sell">Sell</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Order Type</label>
+                        <select name="type" id="alpaca-order-type" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="market">Market</option>
+                            <option value="limit">Limit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Time in Force</label>
+                        <select name="timeInForce" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="day">Day</option>
+                            <option value="gtc">GTC</option>
+                            <option value="opg">OPG</option>
+                            <option value="ioc">IOC</option>
+                            <option value="fok">FOK</option>
+                        </select>
+                    </div>
+                    <div id="alpaca-limit-wrapper" class="hidden">
+                        <label class="block text-xs text-gray-400 mb-1">Limit Price</label>
+                        <input type="number" name="limitPrice" step="0.01" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                    </div>
+                    <div class="col-span-2 flex items-center justify-between">
+                        <label class="flex items-center gap-2 text-xs text-gray-400">
+                            <input type="checkbox" name="extendedHours" class="form-checkbox h-4 w-4 text-emerald-500 bg-gray-900 border-gray-700 rounded" />
+                            Allow extended hours
+                        </label>
+                        <button type="submit" class="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded text-sm font-semibold transition-colors">Push Order</button>
+                    </div>
+                </form>
+
+                <div id="alpaca-order-feedback" class="mt-4 text-sm text-gray-300"></div>
+
+                <div id="alpaca-positions" class="mt-4 bg-gray-900/50 border border-gray-700 rounded-lg p-3 hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-semibold text-gray-300">Open Positions</h3>
+                        <button type="button" id="alpaca-refresh-positions" class="text-[11px] uppercase tracking-wide text-gray-400 hover:text-gray-200">Refresh</button>
+                    </div>
+                    <div id="alpaca-positions-list" class="space-y-1 text-xs text-gray-400"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -263,8 +389,12 @@ app.get('/hurricane-test', (c) => {
         // State management
         let predictions = {};
         let flowData = {};
+        let whalesVariants = {};
         let healthData = {};
         let performanceChart = null;
+        let alpacaCredentials = null;
+        let alpacaAccount = null;
+        let alpacaPositions = [];
 
         async function loadData() {
             try {
@@ -283,9 +413,12 @@ app.get('/hurricane-test', (c) => {
                 try {
                     const flowResp = await axios.get('/api/options/flow?symbol=SPY');
                     flowData = flowResp.data.flow;
+                    whalesVariants = flowResp.data.variants || {};
                     renderOptionsFlow(flowData);
+                    renderWhalesVariants(whalesVariants, flowResp.data.dataSource, flowResp.data.chainSize);
                 } catch (e) {
                     console.log('Flow data not available');
+                    renderWhalesVariants({}, 'unavailable', null);
                 }
                 
                 // Load health metrics
@@ -400,7 +533,7 @@ app.get('/hurricane-test', (c) => {
 
         function renderOptionsFlow(flow) {
             if (!flow) return;
-            
+
             // Update DEX/GEX displays
             const dexElement = document.getElementById('dex-z');
             const gexElement = document.getElementById('gex-level');
@@ -438,10 +571,81 @@ app.get('/hurricane-test', (c) => {
             }
         }
 
+        function renderWhalesVariants(variants, dataSource, chainSize) {
+            const container = document.getElementById('whales-variants');
+            if (!container) return;
+
+            const entries = (variants && typeof variants === 'object') ? Object.entries(variants) : [];
+
+            const resolveCount = (result) => {
+                if (!result || typeof result !== 'object') return 0;
+                const data = result.data;
+                if (Array.isArray(data)) return data.length;
+                if (data && typeof data === 'object') {
+                    if (Array.isArray(data.data)) return data.data.length;
+                    if (Array.isArray(data.results)) return data.results.length;
+                    if (Array.isArray(data.chains)) return data.chains.length;
+                    if (Array.isArray(data.rows)) return data.rows.length;
+                    if (typeof data.count === 'number') return data.count;
+                    if (typeof data.total === 'number') return data.total;
+                }
+                if (Array.isArray(result.results)) return result.results.length;
+                if (Array.isArray(result.chains)) return result.chains.length;
+                if (Array.isArray(result.rows)) return result.rows.length;
+                return 0;
+            };
+
+            const summarizeVariant = (variant, result) => {
+                const label = variant.replace(/_/g, ' ');
+                const success = !!(result && result.success);
+                const count = resolveCount(result);
+                const icon = success ? '✅' : '⚠️';
+                const detail = success ? (count > 0 ? count + ' records' : 'connected') : (result?.error || 'no data');
+                const meta = result?.endpoint || (result?.attempts && result.attempts[0]);
+                const color = success ? 'text-emerald-300' : 'text-amber-300';
+
+                let html = '<div class="flex flex-col">';
+                html += '<div class="flex justify-between items-center">';
+                html += '<span class="capitalize">' + icon + ' ' + label + '</span>';
+                html += '<span class="text-xs ' + color + '">' + detail + '</span>';
+                html += '</div>';
+                if (meta) {
+                    html += '<div class="text-[10px] text-gray-500">via ' + meta + '</div>';
+                }
+                html += '</div>';
+                return html;
+            };
+
+            if (entries.length === 0) {
+                const message = dataSource === 'unavailable'
+                    ? 'Unusual Whales data unavailable at this time.'
+                    : 'No Unusual Whales data. Configure API credentials to enable live flow.';
+                container.innerHTML = '<div class="text-gray-500">' + message + '</div>';
+                return;
+            }
+
+            const summary = entries
+                .filter(([, result]) => result && typeof result === 'object')
+                .map(([variant, result]) => summarizeVariant(variant, result))
+                .join('');
+
+            const headerParts = [];
+            if (dataSource) {
+                headerParts.push('<div class="text-[11px] text-gray-400">Source: ' + dataSource + '</div>');
+            }
+            if (typeof chainSize === 'number') {
+                headerParts.push('<div class="text-[11px] text-gray-400">Contracts: ' + chainSize + '</div>');
+            }
+
+            const header = headerParts.length > 0 ? '<div class="space-y-1 mb-2">' + headerParts.join('') + '</div>' : '';
+
+            container.innerHTML = header + '<div class="space-y-2">' + summary + '</div>';
+        }
+
         function renderHealth(health) {
             const container = document.getElementById('health-metrics');
             if (!health || !health.metrics) return;
-            
+
             const timeframes = ['5m', '15m', '30m', '1h', '4h', '1d'];
             container.innerHTML = timeframes.map(tf => {
                 const metric = health.metrics[tf] || { score: 0.5 };
@@ -449,7 +653,7 @@ app.get('/hurricane-test', (c) => {
                 const color = metric.score >= 0.8 ? 'bg-green-500' :
                              metric.score >= 0.6 ? 'bg-yellow-500' :
                              metric.score >= 0.4 ? 'bg-orange-500' : 'bg-red-500';
-                
+
                 return \`
                     <div class="text-center">
                         <div class="text-xs text-gray-400">\${tf}</div>
@@ -460,6 +664,234 @@ app.get('/hurricane-test', (c) => {
                     </div>
                 \`;
             }).join('');
+        }
+
+        function setAlpacaStatus(message, state = 'idle') {
+            const statusText = document.getElementById('alpaca-status-text');
+            if (!statusText) return;
+
+            const base = 'text-xs ';
+            const palette = state === 'connected' ? 'text-emerald-300' : state === 'error' ? 'text-red-400' : 'text-gray-400';
+            statusText.className = base + palette;
+            statusText.textContent = message;
+        }
+
+        function setAlpacaOrderFeedback(message, state = 'info') {
+            const feedback = document.getElementById('alpaca-order-feedback');
+            if (!feedback) return;
+
+            const palette = state === 'success' ? 'text-emerald-300' : state === 'error' ? 'text-red-400' : 'text-gray-300';
+            feedback.className = 'mt-4 text-sm ' + palette;
+            feedback.textContent = message;
+        }
+
+        function renderAlpacaPositions() {
+            const list = document.getElementById('alpaca-positions-list');
+            if (!list) return;
+
+            if (!alpacaPositions || alpacaPositions.length === 0) {
+                list.innerHTML = '<div class="text-gray-500">No open positions</div>';
+                return;
+            }
+
+            list.innerHTML = alpacaPositions.map(pos => {
+                const side = (pos.side || '').toUpperCase();
+                const qty = Number(pos.qty || pos.quantity || 0);
+                const avgPrice = Number(pos.avg_entry_price || pos.avg_price || 0);
+                const pnl = Number(pos.unrealized_pl || pos.unrealized_plpc || 0);
+                const pnlClass = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+                return \`
+                    <div class="flex justify-between">
+                        <span>\${pos.symbol || pos.asset_id || '??'} (\${side})</span>
+                        <span class="\${pnlClass}">\${qty.toFixed(0)} @ $\${avgPrice.toFixed(2)}</span>
+                    </div>
+                \`;
+            }).join('');
+        }
+
+        function updateAlpacaUI() {
+            const badge = document.getElementById('alpaca-connection-badge');
+            const equityEl = document.getElementById('alpaca-equity');
+            const buyingPowerEl = document.getElementById('alpaca-buying-power');
+            const positionsPanel = document.getElementById('alpaca-positions');
+
+            if (alpacaAccount) {
+                if (badge) {
+                    badge.textContent = 'Connected';
+                    badge.className = 'text-xs px-2 py-1 rounded border border-emerald-400/40 bg-emerald-500/20 text-emerald-300';
+                }
+                if (equityEl) {
+                    const equity = Number(alpacaAccount.equity || alpacaAccount.cash || 0);
+                    equityEl.textContent = equity ? '$' + equity.toFixed(2) : '--';
+                }
+                if (buyingPowerEl) {
+                    const power = Number(alpacaAccount.buying_power || alpacaAccount.cash || 0);
+                    buyingPowerEl.textContent = power ? '$' + power.toFixed(2) : '--';
+                }
+            } else {
+                if (badge) {
+                    badge.textContent = 'Disconnected';
+                    badge.className = 'text-xs px-2 py-1 rounded bg-gray-700 text-gray-300';
+                }
+                if (equityEl) equityEl.textContent = '--';
+                if (buyingPowerEl) buyingPowerEl.textContent = '--';
+            }
+
+            if (positionsPanel) {
+                if (alpacaPositions && alpacaPositions.length > 0) {
+                    positionsPanel.classList.remove('hidden');
+                    renderAlpacaPositions();
+                } else {
+                    positionsPanel.classList.add('hidden');
+                }
+            }
+        }
+
+        async function handleAlpacaConnect(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const baseUrl = (formData.get('baseUrl') || '').toString().trim();
+            const apiKey = (formData.get('apiKey') || '').toString().trim();
+            const apiSecret = (formData.get('apiSecret') || '').toString().trim();
+
+            if (!apiKey || !apiSecret) {
+                setAlpacaStatus('API key and secret are required to connect.', 'error');
+                alpacaAccount = null;
+                alpacaPositions = [];
+                updateAlpacaUI();
+                return;
+            }
+
+            const badge = document.getElementById('alpaca-connection-badge');
+            if (badge) {
+                badge.textContent = 'Connecting…';
+                badge.className = 'text-xs px-2 py-1 rounded border border-sky-400/40 bg-sky-500/20 text-sky-200';
+            }
+            setAlpacaStatus('Connecting to Alpaca…', 'idle');
+
+            try {
+                const response = await axios.post('/api/alpaca/connect', {
+                    baseUrl,
+                    apiKey,
+                    apiSecret
+                });
+
+                const data = response.data;
+                if (data.connected) {
+                    alpacaCredentials = {
+                        baseUrl: data.endpoint || baseUrl,
+                        apiKey,
+                        apiSecret
+                    };
+                    alpacaAccount = data.account || null;
+                    alpacaPositions = data.positions || [];
+                    updateAlpacaUI();
+                    const accountId = data.account?.account_number || data.account?.id || '';
+                    let endpointHost = 'alpaca.markets';
+                    if (data.endpoint) {
+                        try {
+                            endpointHost = new URL(data.endpoint).hostname;
+                        } catch (e) {
+                            endpointHost = data.endpoint;
+                        }
+                    }
+                    const connectionMessage = 'Connected to ' + endpointHost + (accountId ? ' • ' + accountId : '');
+                    setAlpacaStatus(connectionMessage, 'connected');
+                } else {
+                    alpacaCredentials = null;
+                    alpacaAccount = null;
+                    alpacaPositions = [];
+                    updateAlpacaUI();
+                    setAlpacaStatus(data.error || 'Failed to connect to Alpaca.', 'error');
+                }
+            } catch (err) {
+                alpacaCredentials = null;
+                alpacaAccount = null;
+                alpacaPositions = [];
+                updateAlpacaUI();
+                const message = err?.response?.data?.error || err?.message || 'Unable to connect to Alpaca.';
+                setAlpacaStatus(message, 'error');
+            }
+        }
+
+        async function handleAlpacaOrder(event) {
+            event.preventDefault();
+
+            if (!alpacaCredentials) {
+                setAlpacaStatus('Connect to Alpaca before sending orders.', 'error');
+                return;
+            }
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const type = (formData.get('type') || 'market').toString();
+            const payload = {
+                baseUrl: alpacaCredentials.baseUrl,
+                apiKey: alpacaCredentials.apiKey,
+                apiSecret: alpacaCredentials.apiSecret,
+                order: {
+                    symbol: (formData.get('symbol') || 'SPY').toString().toUpperCase(),
+                    qty: Number(formData.get('qty') || 1),
+                    side: (formData.get('side') || 'buy').toString(),
+                    type,
+                    timeInForce: (formData.get('timeInForce') || 'day').toString(),
+                    extendedHours: formData.get('extendedHours') === 'on'
+                }
+            };
+
+            if (type === 'limit') {
+                const limit = formData.get('limitPrice');
+                if (!limit) {
+                    setAlpacaOrderFeedback('Limit price is required for limit orders.', 'error');
+                    return;
+                }
+                payload.order.limitPrice = Number(limit);
+            }
+
+            setAlpacaOrderFeedback('Submitting order to Alpaca…', 'info');
+
+            try {
+                const response = await axios.post('/api/alpaca/orders', payload);
+                if (response.data.success) {
+                    const order = response.data.order;
+                    const clientId = order?.client_order_id || order?.id || 'submitted';
+                    const statusLabel = order?.status || 'accepted';
+                    setAlpacaOrderFeedback('Order ' + clientId + ' submitted (' + statusLabel + ').', 'success');
+                    await refreshAlpacaPositions(false);
+                } else {
+                    setAlpacaOrderFeedback(response.data.error || 'Order rejected by Alpaca.', 'error');
+                }
+            } catch (err) {
+                const message = err?.response?.data?.error || err?.message || 'Failed to submit order to Alpaca.';
+                setAlpacaOrderFeedback(message, 'error');
+            }
+        }
+
+        async function refreshAlpacaPositions(showStatus = true) {
+            if (!alpacaCredentials) return;
+
+            if (showStatus) {
+                setAlpacaStatus('Refreshing Alpaca account…', 'idle');
+            }
+
+            try {
+                const response = await axios.post('/api/alpaca/connect', alpacaCredentials);
+                if (response.data.connected) {
+                    alpacaAccount = response.data.account || null;
+                    alpacaPositions = response.data.positions || [];
+                    updateAlpacaUI();
+                    if (showStatus) {
+                        setAlpacaStatus('Account data refreshed.', 'connected');
+                    }
+                }
+            } catch (err) {
+                if (showStatus) {
+                    setAlpacaStatus('Unable to refresh Alpaca account.', 'error');
+                }
+            }
         }
 
         function initPerformanceChart() {
@@ -520,10 +952,64 @@ app.get('/hurricane-test', (c) => {
             loadData();
             initPerformanceChart();
             updateClock();
-            
+
+            updateAlpacaUI();
+
+            const connectForm = document.getElementById('alpaca-connect-form');
+            const orderForm = document.getElementById('alpaca-order-form');
+            const orderType = document.getElementById('alpaca-order-type');
+            const limitWrapper = document.getElementById('alpaca-limit-wrapper');
+            const clearButton = document.getElementById('alpaca-clear');
+            const regenButton = document.getElementById('alpaca-regenerate');
+            const refreshButton = document.getElementById('alpaca-refresh-positions');
+
+            if (connectForm) {
+                connectForm.addEventListener('submit', handleAlpacaConnect);
+            }
+            if (orderForm) {
+                orderForm.addEventListener('submit', handleAlpacaOrder);
+            }
+            if (orderType && limitWrapper) {
+                orderType.addEventListener('change', () => {
+                    if (orderType.value === 'limit') {
+                        limitWrapper.classList.remove('hidden');
+                    } else {
+                        limitWrapper.classList.add('hidden');
+                    }
+                });
+            }
+            if (clearButton) {
+                clearButton.addEventListener('click', () => {
+                    const baseInput = connectForm?.querySelector('input[name="baseUrl"]');
+                    const keyInput = connectForm?.querySelector('input[name="apiKey"]');
+                    const secretInput = connectForm?.querySelector('input[name="apiSecret"]');
+
+                    if (baseInput) baseInput.value = 'https://paper-api.alpaca.markets';
+                    if (keyInput) keyInput.value = '';
+                    if (secretInput) secretInput.value = '';
+
+                    alpacaCredentials = null;
+                    alpacaAccount = null;
+                    alpacaPositions = [];
+                    setAlpacaStatus('Credentials cleared. Reconnect to resume trading.', 'idle');
+                    updateAlpacaUI();
+                    setAlpacaOrderFeedback('', 'info');
+                });
+            }
+            if (regenButton) {
+                regenButton.addEventListener('click', () => {
+                    window.open('https://app.alpaca.markets/paper/dashboard/account/api-keys', '_blank');
+                });
+            }
+            if (refreshButton) {
+                refreshButton.addEventListener('click', () => {
+                    refreshAlpacaPositions();
+                });
+            }
+
             // Update clock every second
             setInterval(updateClock, 1000);
-            
+
             // Refresh data every 30 seconds
             setInterval(loadData, 30000);
         });
