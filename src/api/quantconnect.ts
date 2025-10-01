@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { EnhancedOptionsScanner } from '../models/OptionsScanner'
+import { EnhancedOptionsScanner, type PredictionDirection } from '../models/OptionsScanner'
 import { BacktestingAccuracy } from '../models/BacktestingAccuracy'
 import { IntegratedPredictionSystem } from '../services/IntegratedPredictionSystem'
 
@@ -60,19 +60,34 @@ api.get('/predictions/current', async (c) => {
     
     // Process each timeframe
     for (const [tf, pred] of Object.entries(predictions.predictions)) {
+      const normalizedDirection = EnhancedOptionsScanner.normalizeDirection(
+        pred.direction as PredictionDirection
+      )
+
       const option = await optionsScanner.findBestOption(
         spotPrice,
         {
-          direction: pred.direction,
+          direction: normalizedDirection,
           expectedReturn: pred.expectedMove / 100,
           confidence: pred.confidence,
           timeframe: tf
         },
         optionChain
       )
+
+      const optionType = option?.type ?? 'none'
+
+      console.log(
+        `[QuantConnect] Timeframe ${tf}: ${pred.direction} -> ${normalizedDirection}. Option recommendation: ${optionType}`
+      )
       
+      const numericDirection =
+        normalizedDirection === 'bullish' ? 1 : normalizedDirection === 'bearish' ? -1 : 0
+
       qcFormat.timeframes[tf] = {
-        direction: pred.direction === 'BUY' ? 1 : pred.direction === 'SELL' ? -1 : 0,
+        direction: numericDirection,
+        raw_direction: pred.direction,
+        normalized_direction: normalizedDirection,
         confidence: pred.confidence,
         target_price: pred.targetPrice,
         stop_loss: pred.stopLoss,
