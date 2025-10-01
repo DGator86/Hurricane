@@ -79,19 +79,41 @@ export class EnhancedOptionsScanner {
   /**
    * Find best option contract for given prediction
    */
+  static normalizeDirection(direction: string | undefined | null): 'bullish' | 'bearish' | 'neutral' {
+    if (!direction) return 'neutral'
+
+    const normalized = direction.toString().trim().toUpperCase()
+
+    if (['STRONG_BUY', 'BUY', 'BULLISH', 'LONG', 'CALL', 'UP'].includes(normalized)) {
+      return 'bullish'
+    }
+
+    if (['STRONG_SELL', 'SELL', 'BEARISH', 'SHORT', 'PUT', 'DOWN'].includes(normalized)) {
+      return 'bearish'
+    }
+
+    if (['NEUTRAL', 'HOLD', 'SIDEWAYS'].includes(normalized)) {
+      return 'neutral'
+    }
+
+    return 'neutral'
+  }
+
   async findBestOption(
     spotPrice: number,
     prediction: {
-      direction: 'bullish' | 'bearish' | 'neutral'
+      direction: string
       expectedReturn: number
       confidence: number
       timeframe: string
     },
     optionChain: OptionContract[]
   ): Promise<OptionRecommendation | null> {
-    if (prediction.direction === 'neutral') return null
+    const direction = EnhancedOptionsScanner.normalizeDirection(prediction.direction)
 
-    const isCall = prediction.direction === 'bullish'
+    if (direction === 'neutral') return null
+
+    const isCall = direction === 'bullish'
     
     // Filter option chain
     const filteredOptions = this.filterOptions(optionChain, isCall)
